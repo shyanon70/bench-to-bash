@@ -1,0 +1,15 @@
+{
+  "name": "Bench to Bash",
+  "short_name": "Bench2Bash",
+  "description": "Daily shell, HPC, Git and genomics-workflow practice for bioinformatics beginners.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0D131A",
+  "theme_color": "#101A24",
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}

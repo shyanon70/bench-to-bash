@@ -1,0 +1,1045 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101A24">
+<meta name="description" content="Daily shell, HPC, Git and genomics-workflow practice for bioinformatics beginners.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Bench to Bash">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Bench to Bash</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: module rail on the left (top scroller on phones), one focused practice card at a time; terminal panes stay dark in both themes. */
+:root{
+  --bg:#EDF1F5; --surface:#FFFFFF; --sunk:#E3E9EF; --ink:#14202C; --muted:#566576; --line:#D2DAE3;
+  --accent:#1D5BC4; --accent-ink:#FFFFFF; --accent-soft:#DCE7FA;
+  --A:#23855A; --C:#2563C9; --G:#B97C06; --T:#C2433A; --N:#B4BFCB;
+  --ok:#1E7D4F; --ok-soft:#DDF2E6; --bad:#B8382E; --bad-soft:#FBE4E1; --warn-soft:#FFF1D6;
+  --term-bg:#101A24; --term-fg:#D9E4EE; --term-dim:#7E91A3; --term-prompt:#7FD1B0; --term-line:#22313F;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0D131A; --surface:#151D26; --sunk:#1B2530; --ink:#E2E9F0; --muted:#94A3B3; --line:#263342;
+  --accent:#6FA2F2; --accent-ink:#0D131A; --accent-soft:#1D2D45;
+  --A:#4FC08A; --C:#6FA2F2; --G:#E2AE3E; --T:#EE7D72; --N:#3E4B59;
+  --ok:#5BCB92; --ok-soft:#173326; --bad:#F08C80; --bad-soft:#3A1E1C; --warn-soft:#3A2E14;
+  --term-bg:#080D12; --term-line:#1C2834; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0D131A; --surface:#151D26; --sunk:#1B2530; --ink:#E2E9F0; --muted:#94A3B3; --line:#263342;
+  --accent:#6FA2F2; --accent-ink:#0D131A; --accent-soft:#1D2D45;
+  --A:#4FC08A; --C:#6FA2F2; --G:#E2AE3E; --T:#EE7D72; --N:#3E4B59;
+  --ok:#5BCB92; --ok-soft:#173326; --bad:#F08C80; --bad-soft:#3A1E1C; --warn-soft:#3A2E14;
+  --term-bg:#080D12; --term-line:#1C2834; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.55}
+button{font:inherit;color:inherit}
+code,kbd,pre,textarea,.mono{font-family:var(--f-mono)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1,h2,h3{font-family:var(--f-display);line-height:1.15;text-wrap:balance;margin:0}
+
+.app{display:grid;grid-template-columns:270px minmax(0,1fr);min-height:100vh}
+.rail{border-right:1px solid var(--line);padding:20px 14px;position:sticky;top:env(safe-area-inset-top,0px);height:100vh;overflow-y:auto;background:var(--surface)}
+.brand{display:flex;align-items:baseline;gap:8px;padding:0 8px 16px}
+.brand b{font-family:var(--f-display);font-weight:800;font-size:22px;letter-spacing:-.01em}
+.brand span{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.navlist{display:flex;flex-direction:column;gap:2px}
+.navbtn{display:grid;grid-template-columns:28px minmax(0,1fr);gap:8px;align-items:center;text-align:left;background:none;border:0;border-radius:8px;padding:8px;cursor:pointer}
+.navbtn:hover{background:var(--sunk)}
+.navbtn[aria-current="true"]{background:var(--accent-soft)}
+.navbtn .k{font-family:var(--f-mono);font-size:12px;color:var(--muted);text-align:center}
+.navbtn .t{font-size:14.5px;line-height:1.3}
+.navbtn .mini{display:block;margin-top:4px}
+.navsec{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);padding:16px 8px 6px}
+
+main{padding-inline:clamp(16px,4vw,48px);padding-block:28px 64px;min-width:0}
+.wrap{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+
+.read{display:inline-flex;flex-wrap:wrap;gap:1px;font-family:var(--f-mono);font-size:11px;font-weight:600;letter-spacing:.02em}
+.read i{font-style:normal;color:var(--N)}
+.read i.A{color:var(--A)}.read i.C{color:var(--C)}.read i.G{color:var(--G)}.read i.T{color:var(--T)}
+
+.eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:700}
+.lede{color:var(--muted);max-width:65ch;margin:0}
+.hero h1{font-size:clamp(30px,4.6vw,46px);font-weight:800;letter-spacing:-.02em;margin:6px 0 10px}
+
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
+.stat .v{font-family:var(--f-display);font-size:28px;font-weight:700;font-variant-numeric:tabular-nums}
+.stat .l{font-size:13px;color:var(--muted)}
+.bar{height:6px;background:var(--sunk);border-radius:6px;overflow:hidden;margin-top:8px}
+.bar>div{height:100%;background:var(--accent)}
+
+.plan{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);overflow:hidden}
+.plan>div{padding:14px 16px;border-right:1px solid var(--line);min-width:0}
+.plan>div:last-child{border-right:0}
+.plan .min{font-family:var(--f-mono);font-size:13px;color:var(--accent);font-weight:600}
+.plan h3{font-size:16px;margin:4px 0}
+.plan p{margin:0;font-size:14px;color:var(--muted)}
+
+.btn{display:inline-flex;align-items:center;gap:8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);padding:9px 14px;cursor:pointer;font-size:15px}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.btn.small{padding:6px 10px;font-size:14px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+
+.modgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.modcard{text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;cursor:pointer;display:flex;flex-direction:column;gap:6px}
+.modcard:hover{border-color:var(--accent)}
+.modcard .n{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.modcard h3{font-size:17px}
+.modcard p{margin:0;font-size:14px;color:var(--muted)}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
+.tab{background:none;border:0;border-bottom:3px solid transparent;padding:10px 12px;cursor:pointer;font-weight:700;color:var(--muted)}
+.tab[aria-selected="true"]{color:var(--ink);border-color:var(--accent)}
+
+.lessons{display:flex;flex-direction:column;gap:14px}
+.lesson{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:18px}
+.lesson h3{font-size:18px;margin-bottom:6px}
+.lesson .when{margin:0;font-size:15px}
+.lesson .when b{color:var(--accent)}
+.lesson .watch{margin:8px 0 0;font-size:14px;color:var(--muted)}
+.lesson .watch b{color:var(--T)}
+pre.code{margin:0;background:var(--term-bg);color:var(--term-fg);border-radius:8px;padding:12px 14px;font-size:13.5px;line-height:1.6;overflow-x:auto;white-space:pre}
+pre.code .c{color:var(--term-dim)}
+pre.code .p{color:var(--term-prompt)}
+
+.lab{border:1px dashed var(--accent);border-radius:var(--r);padding:16px 18px;background:var(--accent-soft)}
+.lab h3{font-size:17px;margin-bottom:6px}
+.lab ol{margin:0;padding-left:20px}
+
+/* practice card */
+.prac{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.prac-head{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;padding:12px 18px;border-bottom:1px solid var(--line);background:var(--sunk)}
+.strip{display:flex;flex-wrap:wrap;gap:3px}
+.strip button{width:26px;height:26px;border-radius:5px;border:1px solid var(--line);background:var(--surface);font-family:var(--f-mono);font-weight:600;font-size:13px;cursor:pointer;color:var(--N);padding:0}
+.strip button.A{color:var(--A)}.strip button.C{color:var(--C)}.strip button.G{color:var(--G)}.strip button.T{color:var(--T)}
+.strip button.done{color:#fff;border-color:transparent}
+.strip button.done.A{background:var(--A)}.strip button.done.C{background:var(--C)}.strip button.done.G{background:var(--G)}.strip button.done.T{background:var(--T)}
+:root[data-theme="dark"] .strip button.done{color:#0D131A}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .strip button.done{color:#0D131A}}
+.strip button.cur{outline:2px solid var(--ink);outline-offset:1px}
+.prac-body{padding:18px;display:flex;flex-direction:column;gap:14px}
+.kind{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:700}
+.q{font-size:18px;margin:0;max-width:65ch}
+.q code,.fb code,.when code,.watch code,.lab code,.cheat code,p code{background:var(--sunk);padding:1px 5px;border-radius:4px;font-size:.88em}
+.term{background:var(--term-bg);color:var(--term-fg);border-radius:8px;padding:12px 14px;font-family:var(--f-mono);font-size:14px;min-width:0}
+.term .ctx{color:var(--term-dim);white-space:pre-wrap;margin-bottom:6px}
+.term .line{display:flex;gap:8px;align-items:center}
+.term .ps{color:var(--term-prompt);white-space:nowrap;flex-shrink:0}
+.term input{flex:1;min-width:0;background:transparent;border:0;color:var(--term-fg);font:inherit;font-size:15px;caret-color:var(--term-prompt);padding:4px 0}
+.term input:focus{outline:none}
+.term:focus-within{box-shadow:0 0 0 2px var(--accent)}
+textarea.script{width:100%;min-height:220px;background:var(--term-bg);color:var(--term-fg);border:0;border-radius:8px;padding:12px 14px;font-size:14px;line-height:1.6;resize:vertical;caret-color:var(--term-prompt)}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 14px;cursor:pointer;font-size:15px}
+.opt:hover{border-color:var(--accent)}
+.opt.right{background:var(--ok-soft);border-color:var(--ok)}
+.opt.wrong{background:var(--bad-soft);border-color:var(--bad)}
+.fb{border-radius:8px;padding:12px 14px;font-size:15px}
+.fb.ok{background:var(--ok-soft);border-left:4px solid var(--ok)}
+.fb.no{background:var(--bad-soft);border-left:4px solid var(--bad)}
+.fb.hint{background:var(--warn-soft);border-left:4px solid var(--G)}
+.fb.show{background:var(--sunk);border-left:4px solid var(--muted)}
+.fb p{margin:0}.fb p+p,.fb pre{margin-top:8px}
+.checks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:14.5px}
+.checks li::before{content:"✗ ";color:var(--bad);font-weight:700}
+.checks li.pass::before{content:"✓ ";color:var(--ok)}
+.prac-foot{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center}
+.small-note{font-size:13px;color:var(--muted)}
+
+.cheat{display:flex;flex-direction:column;gap:22px}
+.cheat table{width:100%;border-collapse:collapse;font-size:14px;background:var(--surface)}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r)}
+.cheat th,.cheat td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+.cheat th{background:var(--sunk);font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.cheat td.mono{white-space:nowrap}
+.cheat h2{font-size:22px;margin-bottom:8px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:14px;z-index:9}
+
+
+.tutor{border-top:1px solid var(--line);background:var(--sunk);padding:14px 18px;display:flex;flex-direction:column;gap:10px}
+.tutor.lone{border:1px solid var(--line);border-radius:var(--r);margin-top:16px}
+.tutor-head{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:baseline}
+.tutor-name{font-family:var(--f-display);font-weight:700;font-size:16px}
+.tlog{display:flex;flex-direction:column;gap:10px}
+.tlog:empty{display:none}
+.msg{border-radius:8px;padding:10px 12px;font-size:15px;min-width:0;background:var(--surface);border:1px solid var(--line)}
+.msg.you{background:var(--accent-soft);border-color:transparent;align-self:flex-end;max-width:90%;white-space:pre-wrap}
+.msg .who{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;margin-bottom:4px}
+.msg p{margin:0}.msg p+p,.msg p+pre,.msg pre+p,.msg ul+p,.msg p+ul{margin-top:8px}
+.msg ul{margin:6px 0 0;padding-left:20px}
+.msg pre.code{margin:8px 0 0}
+.quick{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:13.5px;cursor:pointer;text-align:left}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.tin{display:flex;flex-direction:column;gap:8px}
+.tin textarea{width:100%;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;font-size:15px;padding:8px 10px;resize:vertical}
+.offline{border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;background:var(--surface)}
+.offline p{margin:0;max-width:72ch}
+
+@media (max-width:820px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .rail{position:sticky;top:env(safe-area-inset-top,0px);height:auto;z-index:5;border-right:0;border-bottom:1px solid var(--line);padding:10px 12px}
+  .brand{padding:0 4px 8px}
+  .navsec{display:none}
+  .navlist{flex-direction:row;overflow-x:auto;gap:4px;padding-bottom:4px}
+  .navbtn{grid-template-columns:auto;white-space:nowrap;padding:6px 10px}
+  .navbtn .k,.navbtn .mini{display:none}
+  .lesson{grid-template-columns:minmax(0,1fr)}
+  .plan{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .plan>div:nth-child(2){border-right:0}
+  .plan>div:nth-child(-n+2){border-bottom:1px solid var(--line)}
+}
+@media (max-width:480px){.stats{grid-template-columns:minmax(0,1fr)}.plan{grid-template-columns:minmax(0,1fr)}.plan>div{border-right:0;border-bottom:1px solid var(--line)}}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="app">
+  <nav class="rail" aria-label="Modules">
+    <div class="brand"><b>Bench to Bash</b><span>v1</span></div>
+    <div class="navlist" id="nav"></div>
+  </nav>
+  <main><div class="wrap" id="view"></div></main>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* ============================== CONTENT ============================== */
+// Exercise types: cmd (one line, checked by regex), mcq, script (multi-line, checklist)
+// has(): every pattern must match somewhere, so flags can come in any order
+const has=(...res)=>v=>res.every(r=>r.test(v));
+const MODULES = [
+{id:'nav', title:'Moving around', blurb:'pwd, ls, cd, paths, mkdir -p',
+ lessons:[
+  {h:'pwd: where am I?', when:'Use it the moment you feel lost, after logging in, or before running anything that writes files. It prints the full path of the folder you are in.', code:'$ pwd\n/home/you/project/scripts', watch:'<code>pwd</code> is the shell version. In R it is <code>getwd()</code>. Same idea, different language.'},
+  {h:'ls: what is here?', when:'Use <code>ls</code> to list files, <code>ls -lh</code> to also see sizes in KB/MB/GB (great for checking FASTQ/BAM sizes), <code>ls -a</code> to show hidden files like <code>.bashrc</code>.', code:'$ ls -lh data/\n-rw-r--r-- 1 you lab 1.2G S1_R1.fastq.gz\n-rw-r--r-- 1 you lab 1.3G S1_R2.fastq.gz', watch:'A 0-byte output file usually means a step failed. <code>ls -lh</code> catches that fast.'},
+  {h:'cd: change directory', when:'<code>cd folder</code> goes into a folder. <code>cd ..</code> goes up one. <code>cd ../..</code> goes up two. <code>cd ~</code> or plain <code>cd</code> goes home. <code>cd -</code> jumps back to where you just were.', code:'# you are in ~/project/results/qc\n$ cd ../../data     # up two, then into data\n$ pwd\n/home/you/project/data\n$ cd -              # back to results/qc', watch:'<code>..</code> means "parent folder". <code>.</code> means "this folder".'},
+  {h:'Absolute vs relative paths', when:'An <b>absolute</b> path starts with <code>/</code> and works from anywhere. A <b>relative</b> path starts from where you are now. Use absolute paths inside job scripts, because the job may start in a different folder.', code:'/scratch/you/project/data/S1.bam   # absolute\ndata/S1.bam                       # relative\n../data/S1.bam                    # relative, via parent', watch:'"No such file or directory" is very often a relative path used from the wrong folder. Run <code>pwd</code>.'},
+  {h:'mkdir -p: make folders', when:'Use <code>mkdir -p</code> to create nested folders in one go. It also does not complain if the folder already exists, which makes it safe in scripts.', code:'$ mkdir -p results/alignment/bam logs', watch:'Plain <code>mkdir a/b/c</code> fails when <code>a/b</code> does not exist yet.'}
+ ],
+ ex:[
+  {t:'cmd', q:'You just logged into the cluster. Print the folder you are currently in.', acc:[/^pwd$/], hint:'Three letters: print working directory.', ans:'pwd', why:'<code>pwd</code> = print working directory.'},
+  {t:'cmd', q:'List the files in this folder with sizes in human-readable units (K, M, G).', acc:[/^ls (-[a-z]*l[a-z]*h[a-z]*|-[a-z]*h[a-z]*l[a-z]*|-l -h|-h -l)$/], hint:'Two flags on ls: one for "long" format, one for "human-readable".', ans:'ls -lh', why:'<code>-l</code> long format, <code>-h</code> human-readable sizes. Flags can be combined: <code>-lh</code>.'},
+  {t:'cmd', ctx:'you@hpc:~/project/scripts$ pwd\n/home/you/project/scripts', q:'Move up one level, to <code>~/project</code>.', acc:[/^cd \.\.\/?$/, /^cd ~\/project\/?$/, /^cd \/home\/you\/project\/?$/], hint:'Two dots mean "the parent folder".', ans:'cd ..', why:'<code>cd ..</code> and <code>cd ../</code> are the same thing.'},
+  {t:'cmd', ctx:'you@hpc:~/project/results/qc$', q:'Go to <code>~/project/data</code> in one command using a <b>relative</b> path.', acc:[/^cd \.\.\/\.\.\/data\/?$/], traps:[[/^cd ~|^cd \//,'That works, but it is an absolute path. Try going up with <code>..</code> twice.']], hint:'Up two levels (qc → results → project), then into data.', ans:'cd ../../data', why:'From qc: <code>..</code> is results, <code>../..</code> is project, then <code>/data</code>.'},
+  {t:'cmd', q:'Create <code>results/alignment/bam</code> in one command, even though <code>results/</code> does not exist yet.', acc:[/^mkdir -p results\/alignment\/bam\/?$/], traps:[[/^mkdir results/,'Without <code>-p</code>, mkdir fails because the parent folders are missing.']], hint:'mkdir has a flag for "make parents too".', ans:'mkdir -p results/alignment/bam', why:'<code>-p</code> creates every missing parent folder and is silent if it already exists.'},
+  {t:'mcq', q:'Which of these is an absolute path?', opts:['data/raw/S1.fastq.gz','../data','/scratch/you/project/data','./data'], a:2, why:'Absolute paths start at the root, <code>/</code>. The others depend on where you are standing.'},
+  {t:'cmd', q:'You were in <code>~/project/results</code>, then did <code>cd /scratch/you/tmp</code>. Jump straight back to the previous folder.', acc:[/^cd -$/, /^cd ~\/project\/results\/?$/], hint:'cd plus a single dash.', ans:'cd -', why:'<code>cd -</code> toggles between your current and previous folder.'}
+ ],
+ lab:['Run <code>pwd</code>, then <code>cd ..</code>, then <code>pwd</code> again. Notice exactly what changed.','Build your practice project: <code>mkdir -p ~/practice/{data,scripts,results,logs}</code> and check it with <code>ls ~/practice</code>.','From inside <code>~/practice/results</code>, reach <code>~/practice/data</code> with a relative path.']
+},
+{id:'files', title:'Looking at files', blurb:'head, zcat, wc, cp, mv, wildcards',
+ lessons:[
+  {h:'head, tail, less', when:'<code>head</code> shows the top of a file (default 10 lines), <code>tail</code> the bottom. <code>less</code> opens a scrollable viewer for big files (press <code>q</code> to quit, <code>/word</code> to search). Use <code>cat</code> only for small files.', code:'$ head -n 8 S1.fastq     # first 2 reads\n$ tail -n 20 job.log     # end of a log\n$ less -S genes.gtf      # -S: no line wrap', watch:'<code>cat</code> on a 10 GB FASTQ floods your screen. Press <code>Ctrl+C</code> to stop it.'},
+  {h:'Compressed files: zcat, zless', when:'Most sequencing data is <code>.gz</code>. Use <code>zcat</code> (or <code>zless</code>) to read it without unzipping to disk. Pipe it into <code>head</code>.', code:'$ zcat S1_R1.fastq.gz | head -n 4\n@A00123:8:H5:1:1101:1000:1000 1:N:0\nGATTACAGATTACA...\n+\nFFFFFFF:FFFFF...', watch:'<code>head file.gz</code> prints binary garbage. Decompress first with <code>zcat</code>. On macOS use <code>gzcat</code>.'},
+  {h:'wc -l: count lines', when:'Use it to count lines: genes in a BED, rows in a count table, and (divided by 4) reads in a FASTQ.', code:'$ wc -l genes.bed\n20345 genes.bed\n$ wc -l < genes.bed     # number only\n20345', watch:''},
+  {h:'cp, mv, rm', when:'<code>cp a b</code> copies, <code>cp -r</code> copies folders. <code>mv a b</code> moves or renames. <code>rm</code> deletes, with no trash can.', code:'$ cp -r raw_data backup\n$ mv S1.fq.gz S1_R1.fastq.gz\n$ rm -i old.sam          # -i asks first', watch:'Never run <code>rm -r</code> with a wildcard until you have checked it with <code>ls</code> using the same pattern.'},
+  {h:'Wildcards', when:'<code>*</code> matches anything, <code>?</code> one character. Use them to act on many files at once.', code:'$ ls *.fastq.gz\n$ ls S?_R1.fastq.gz\n$ ls *_R{1,2}.fastq.gz', watch:''}
+ ],
+ ex:[
+  {t:'cmd', q:'Show the first 8 lines (2 reads) of <code>S1.fastq</code> (not compressed).', acc:[/^head (-n ?8|-8) S1\.fastq$/, /^head S1\.fastq -n ?8$/], hint:'head with -n and a number.', ans:'head -n 8 S1.fastq', why:'Each FASTQ read is 4 lines, so 8 lines = 2 reads.'},
+  {t:'cmd', q:'<code>S1.fastq.gz</code> is compressed. Show its first 4 lines without unzipping the file on disk.', acc:[/^(zcat|gzcat|gunzip -c|gzip -dc|gzip -cd) S1\.fastq\.gz \| ?head (-n ?4|-4)$/,/^(zcat|gzcat|gunzip -c|gzip -dc|gzip -cd) S1\.fastq\.gz ?\| ?head (-n ?4|-4)$/], traps:[[/^head .*\.gz/,'<code>head</code> on a .gz file shows compressed binary. Decompress with <code>zcat</code> and pipe <code>|</code> into head.'],[/^zcat S1\.fastq\.gz$/,'Close. Without head, zcat prints the entire file. Pipe it: <code>| head -n 4</code>.']], hint:'zcat the file, then pipe | into head.', ans:'zcat S1.fastq.gz | head -n 4', why:'<code>zcat</code> streams the decompressed text; <code>|</code> hands it to <code>head</code>, which stops after 4 lines.'},
+  {t:'cmd', q:'Count the lines in <code>genes.bed</code>.', acc:[/^wc -l genes\.bed$/, /^cat genes\.bed ?\| ?wc -l$/, /^wc -l ?< ?genes\.bed$/], hint:'word count, with the flag for lines.', ans:'wc -l genes.bed', why:'<code>wc -l</code> counts newline characters, so one per line.'},
+  {t:'cmd', q:'List only the compressed FASTQ files (ending in <code>.fastq.gz</code>) in this folder.', acc:[/^ls( -[a-z]+)? \*\.fastq\.gz$/], hint:'Use the * wildcard.', ans:'ls *.fastq.gz', why:'<code>*</code> matches any characters, so <code>*.fastq.gz</code> matches every name ending that way.'},
+  {t:'cmd', q:'Copy the folder <code>raw_data/</code> (with all files inside) to a new folder <code>backup</code>.', acc:[/^cp -(r|R|a|rv|vr|Rv|av) raw_data\/? backup\/?$/], traps:[[/^cp raw_data/,'cp skips folders unless you add <code>-r</code> (recursive).']], hint:'cp needs a "recursive" flag for folders.', ans:'cp -r raw_data backup', why:'<code>-r</code> = recursive: copy the folder and everything in it.'},
+  {t:'mcq', q:'When should you use <code>less</code> instead of <code>cat</code>?', opts:['When the file is small','When the file is large and you want to scroll and search','When you want to join two files','When the file is compressed'], a:1, why:'<code>less</code> shows one screen at a time and lets you search with <code>/</code>. <code>cat</code> dumps everything at once and is also used to join (con<b>cat</b>enate) files.'},
+  {t:'cmd', q:'Rename <code>S1.fq.gz</code> to <code>S1_R1.fastq.gz</code>.', acc:[/^mv (-[a-z]+ )?S1\.fq\.gz S1_R1\.fastq\.gz$/], traps:[[/^cp /,'cp leaves the old file behind. Renaming is a move.'],[/^rename/,'Some systems have rename, but the universal way is mv.']], hint:'Renaming is "moving" to a new name.', ans:'mv S1.fq.gz S1_R1.fastq.gz', why:'<code>mv old new</code> renames in place.'}
+ ],
+ lab:['Download a tiny FASTQ (or make one with 8 lines by hand), gzip it with <code>gzip file.fastq</code>, then view it with <code>zcat file.fastq.gz | head</code>.','Try <code>head</code> directly on the .gz to see what the garbage looks like, so you recognise it later.','Use <code>less -S</code> on any GTF or BED and practise searching with <code>/</code>.']
+},
+{id:'vars', title:'Variables & quoting', blurb:'NAME=value, $NAME, ${NAME}, "" vs \'\', $( )',
+ lessons:[
+  {h:'Creating a variable', when:'Use a variable for anything you would otherwise retype: a sample name, a reference path, a thread count. Write <code>NAME=value</code> with <b>no spaces</b> around <code>=</code>.', code:'SAMPLE=S1\nREF=/refs/hg38/hg38.fa\nTHREADS=8', watch:'<code>SAMPLE = S1</code> fails: bash thinks <code>SAMPLE</code> is a command. No <code>$</code> when you <i>set</i> a variable.'},
+  {h:'Using it: $ and ${ }', when:'Put <code>$</code> in front when you <i>read</i> the value. Use braces <code>${NAME}</code> whenever letters, digits or underscores come right after the name.', code:'echo $SAMPLE              # S1\necho ${SAMPLE}_R1.fastq.gz # S1_R1.fastq.gz\necho $SAMPLE_R1.fastq.gz   # .fastq.gz  (oops)', watch:'<code>$SAMPLE_R1</code> is read as a variable called <code>SAMPLE_R1</code>, which is empty. Braces fix it.'},
+  {h:'Double vs single quotes', when:'<b>Double quotes</b> <code>"..."</code> keep spaces together but still expand <code>$VARS</code>. Use them around almost every variable. <b>Single quotes</b> <code>\'...\'</code> are fully literal; use them for awk programs and patterns.', code:'echo "Sample: $SAMPLE"   # Sample: S1\necho \'Sample: $SAMPLE\'   # Sample: $SAMPLE\nls "$FILE"               # safe if name has spaces', watch:'Habit to build: always write <code>"$VAR"</code> in scripts.'},
+  {h:'echo: print and check', when:'Use <code>echo</code> to print messages in scripts and, most of all, to <b>check</b> a variable or a command before running it for real.', code:'echo "Aligning $SAMPLE with $THREADS threads"\necho rm *.sam     # preview what rm would get', watch:''},
+  {h:'$( ): capture a command\'s output', when:'Use <code>$(command)</code> to put the output of a command into a variable or another command. <code>$(( ))</code> with two parentheses does integer math.', code:'TODAY=$(date +%F)\nN=$(wc -l < genes.bed)\necho $(( N / 2 ))', watch:'<code>$( )</code> runs a command; <code>${ }</code> reads a variable; <code>$(( ))</code> does arithmetic.'},
+  {h:'export', when:'A plain variable only exists in the current shell. <code>export</code> passes it to programs and scripts you launch from there.', code:'export THREADS=8\nbash align.sh   # can now see $THREADS', watch:''}
+ ],
+ ex:[
+  {t:'cmd', q:'Make a variable <code>SAMPLE</code> that holds the value <code>S1</code>.', acc:[/^SAMPLE=("S1"|'S1'|S1)$/], traps:[[/^SAMPLE ?= |^SAMPLE =/,'No spaces around <code>=</code>. Bash would try to run a command called SAMPLE.'],[/^\$SAMPLE/,'No <code>$</code> when setting a variable. <code>$</code> is only for reading it.'],[/^(set|var|let) /,'Bash needs no keyword. Just <code>NAME=value</code>.']], hint:'NAME=value, no spaces.', ans:'SAMPLE=S1', why:'Assignment is name, equals sign, value, all touching.'},
+  {t:'cmd', q:'Print the value of <code>SAMPLE</code>.', acc:[/^echo "?\$\{?SAMPLE\}?"?$/, /^printf .*\$\{?SAMPLE\}?/], traps:[[/^echo "?SAMPLE"?$/,'That prints the word SAMPLE. Add <code>$</code> to read the value.']], hint:'echo plus $.', ans:'echo "$SAMPLE"', why:'<code>$SAMPLE</code> is replaced by its value, S1, before echo runs.'},
+  {t:'cmd', q:'Using the variable, print <code>S1_R1.fastq.gz</code>.', acc:[/^echo "?\$\{SAMPLE\}_R1\.fastq\.gz"?$/, /^echo "\$SAMPLE"_R1\.fastq\.gz$/], traps:[[/\$SAMPLE_R1/,'Bash reads <code>$SAMPLE_R1</code> as one variable named SAMPLE_R1, which is empty. Wrap the name: <code>${SAMPLE}_R1</code>.']], hint:'Braces around the variable name.', ans:'echo "${SAMPLE}_R1.fastq.gz"', why:'Braces mark exactly where the name ends.'},
+  {t:'mcq', q:'With <code>SAMPLE=S1</code>, what does <code>echo \'$SAMPLE\'</code> print?', opts:['S1','$SAMPLE','Nothing','An error'], a:1, why:'Single quotes are literal; nothing inside them is expanded.'},
+  {t:'cmd', q:'Store today\'s date (from the <code>date</code> command) in a variable called <code>TODAY</code>.', acc:[/^TODAY="?\$\(date[^)]*\)"?$/, /^TODAY=`date[^`]*`$/], traps:[[/^TODAY=date/,'That stores the word "date". Run the command with <code>$( )</code>.'],[/^TODAY=\$\{date/,'<code>${ }</code> reads a variable. To run a command, use <code>$( )</code>.']], hint:'Command substitution: $( ).', ans:'TODAY=$(date)', why:'<code>$(date)</code> runs date and drops its output into the variable.'},
+  {t:'cmd', q:'Set <code>THREADS</code> to 8 and make it visible to scripts you start from this shell, in one command.', acc:[/^export THREADS=("8"|'8'|8)$/], hint:'A keyword in front of the assignment.', ans:'export THREADS=8', why:'<code>export</code> copies the variable into the environment of child processes.'},
+  {t:'mcq', q:'<code>FILE="/data/my project/reads.fq"</code> (there is a space). Which command works?', opts:['ls $FILE','ls "$FILE"','ls \'$FILE\'','ls ${FILE'], a:1, why:'Without quotes, bash splits at the space and looks for two files. Double quotes keep it one path and still expand the variable.'}
+ ],
+ lab:['In your terminal set <code>SAMPLE=S1</code> then try <code>echo $SAMPLE_R1</code> and <code>echo ${SAMPLE}_R1</code>. See the difference with your own eyes.','Try <code>SAMPLE = S2</code> with spaces and read the error message. You will meet it again.','Run <code>N=$(ls | wc -l); echo "There are $N files here"</code>.']
+},
+{id:'counts', title:'Read counting', blurb:'FASTQ ÷ 4, grep -c, samtools view -c, cut | sort | uniq -c',
+ lessons:[
+  {h:'Reads in a FASTQ', when:'A FASTQ record is always 4 lines (header, sequence, +, quality). Count lines, divide by 4.', code:'$ echo $(( $(zcat S1_R1.fastq.gz | wc -l) / 4 ))\n2500000\n# or with awk\n$ zcat S1_R1.fastq.gz | awk \'END{print NR/4}\'', watch:'Do not <code>grep -c "@"</code>: quality lines can also start with <code>@</code>.'},
+  {h:'Sequences in a FASTA', when:'Each sequence starts with a header line beginning with <code>&gt;</code>. Count headers with <code>grep -c</code>.', code:'$ grep -c "^>" genome.fa\n25', watch:'Always quote <code>"^>"</code>. An unquoted <code>&gt;</code> is redirection: bash would overwrite a file.'},
+  {h:'Reads in a BAM: samtools', when:'BAM is binary, so use samtools. <code>view -c</code> counts records; <code>-F 4</code> excludes unmapped; <code>flagstat</code> gives a full summary.', code:'$ samtools view -c S1.bam\n$ samtools view -c -F 4 S1.bam     # mapped only\n$ samtools flagstat S1.bam', watch:'<code>-f</code> keeps reads WITH a flag; <code>-F</code> removes reads with it.'},
+  {h:'Columns: cut and awk', when:'Use <code>cut -f2</code> to grab tab-separated columns. Use <code>awk</code> when you need logic (filters, math). Use <code>sort | uniq -c</code> to tally values.', code:'$ cut -f1 genes.bed | sort | uniq -c\n   2034 chr1\n   1287 chr2\n$ awk \'$2 > 10\' counts.tsv     # rows with count > 10', watch:'<code>uniq</code> only merges neighbouring lines, so always <code>sort</code> first.'},
+  {h:'grep: find lines', when:'<code>grep pattern file</code> prints matching lines. <code>-c</code> counts them, <code>-v</code> inverts (lines that do NOT match), <code>-w</code> whole word.', code:'$ grep -v "^#" variants.vcf | wc -l   # non-header lines\n$ grep -w "TP53" genes.gtf', watch:''}
+ ],
+ ex:[
+  {t:'mcq', q:'A FASTQ file has 400,000 lines. How many reads?', opts:['400,000','200,000','100,000','1,600,000'], a:2, why:'4 lines per read: 400,000 / 4 = 100,000.'},
+  {t:'cmd', q:'Print the number of reads in <code>S1.fastq.gz</code>.', acc:[/^echo "?\$\(\( ?\$\((zcat|gzcat|gunzip -c|gzip -dc) S1\.fastq\.gz ?\| ?wc -l ?\) ?\/ ?4 ?\)\)"?$/, /^(zcat|gzcat|gunzip -c|gzip -dc) S1\.fastq\.gz ?\| ?awk '(END ?\{ ?print NR ?\/ ?4;? ?\})'$/, /^echo \$\(\( ?\$\((zcat|gzcat) S1\.fastq\.gz ?\| ?wc -l ?\) ?\/4 ?\)\)$/], traps:[[/grep -c/,'Counting @ is unreliable: quality strings can start with @. Count lines and divide by 4.'],[/^(zcat|gzcat) S1\.fastq\.gz ?\| ?wc -l$/,'That is the number of lines. Now divide by 4 with <code>echo $(( ... / 4 ))</code>.']], hint:'echo $(( $(zcat FILE | wc -l) / 4 ))', ans:'echo $(( $(zcat S1.fastq.gz | wc -l) / 4 ))', why:'Inner <code>$( )</code> runs the count; outer <code>$(( ))</code> does the division. The awk version <code>zcat S1.fastq.gz | awk \'END{print NR/4}\'</code> also works.'},
+  {t:'cmd', q:'Count the sequences in <code>genome.fa</code>.', acc:[/^grep -c (["'])\^?>\1 genome\.fa$/, /^grep -c \\\^?>|^grep -c \^\\>/], traps:[[/^grep -c \^?> /,'Danger: an unquoted <code>&gt;</code> is redirection. Bash would send output into a file named genome.fa and wipe it! Quote it: <code>"^>"</code>.']], hint:'grep -c with the quoted pattern "^>".', ans:'grep -c "^>" genome.fa', why:'<code>^</code> anchors to the start of the line; every FASTA header begins with <code>&gt;</code>.'},
+  {t:'cmd', q:'Count all records in <code>aligned.bam</code>.', acc:[/^samtools view -c aligned\.bam$/], traps:[[/^wc -l .*bam/,'BAM is compressed binary; wc counts nonsense. Use samtools.']], hint:'samtools view with a count flag.', ans:'samtools view -c aligned.bam', why:'<code>-c</code> prints a count instead of the reads.'},
+  {t:'cmd', q:'Count only the <b>mapped</b> reads in <code>aligned.bam</code> (exclude flag 4 = unmapped).', acc:[/^samtools view (-c -F ?4|-F ?4 -c|-cF ?4) aligned\.bam$/], traps:[[/-f ?4/,'Lowercase <code>-f 4</code> KEEPS only unmapped reads. Uppercase <code>-F</code> filters them out.']], hint:'-c plus the uppercase filter flag.', ans:'samtools view -c -F 4 aligned.bam', why:'<code>-F 4</code> drops reads that have the "unmapped" bit set.'},
+  {t:'cmd', q:'<code>counts.tsv</code> is tab-separated: gene, count. Print only the second column.', acc:[/^cut -f ?2 counts\.tsv$/, /^awk (-F ?['"]?\\t['"]? )?'\{ ?print \$2;? ?\}' counts\.tsv$/], hint:'cut, field 2.', ans:'cut -f2 counts.tsv', why:'cut uses tabs by default. awk works too: <code>awk \'{print $2}\' counts.tsv</code>.'},
+  {t:'cmd', q:'Column 1 of <code>genes.bed</code> is the chromosome. Count genes per chromosome.', acc:[/^cut -f ?1 genes\.bed ?\| ?sort( -V)? ?\| ?uniq -c$/, /^awk '\{ ?print \$1;? ?\}' genes\.bed ?\| ?sort( -V)? ?\| ?uniq -c$/], traps:[[/genes\.bed ?\| ?uniq -c$/,'uniq only merges neighbouring identical lines, so add <code>| sort</code> before it.'],[/uniq -c ?\| ?sort/,'Check the order: cut → sort → uniq -c.']], hint:'cut column 1 | sort | uniq -c', ans:'cut -f1 genes.bed | sort | uniq -c', why:'A classic three-step pipe: take the column, group identical values, count each group.'}
+ ],
+ lab:['Make a 3-read FASTQ by hand (12 lines) and confirm your counting command prints 3.','If you have any BAM, compare <code>samtools view -c</code>, <code>-c -F 4</code> and <code>flagstat</code>.','Write the gene-per-chromosome pipe step by step, adding one <code>|</code> at a time and looking at the output each time.']
+},
+{id:'pipes', title:'Pipes & redirection', blurb:'|  >  >>  2>  &>',
+ lessons:[
+  {h:'| pipe', when:'Send the output of one command straight into the next, without saving a file in between.', code:'zcat S1.fastq.gz | head -n 4\ncut -f1 genes.bed | sort | uniq -c', watch:''},
+  {h:'> write, >> append', when:'<code>&gt;</code> saves output to a file and <b>overwrites</b> it. <code>&gt;&gt;</code> adds to the end. Use <code>&gt;&gt;</code> for log files you keep adding to.', code:'ls *.bam > bam_list.txt\necho "step 2 done" >> run.log', watch:'<code>&gt;</code> on an existing file erases it immediately, even if the command fails.'},
+  {h:'2> errors, &> both', when:'Programs print results on <b>stdout</b> and messages/errors on <b>stderr</b>. <code>2&gt;</code> saves stderr; <code>&amp;&gt;</code> saves both into one file.', code:'bwa mem ref.fa R1.fq R2.fq > S1.sam 2> S1.bwa.log\n./qc.sh &> qc.log', watch:'Many tools (bwa, STAR) write progress to stderr, so <code>&gt;</code> alone leaves it on screen.'},
+  {h:'tee', when:'Use <code>tee</code> to see output on screen AND save it to a file.', code:'./run.sh 2>&1 | tee run.log', watch:''}
+ ],
+ ex:[
+  {t:'cmd', q:'Save a list of all <code>.bam</code> files into <code>bam_list.txt</code>.', acc:[/^ls( -1)? \*\.bam ?> ?bam_list\.txt$/], hint:'ls with a wildcard, then >.', ans:'ls *.bam > bam_list.txt', why:'<code>&gt;</code> redirects the list into a new file.'},
+  {t:'cmd', q:'Add the line <code>run finished</code> to the end of <code>log.txt</code> without erasing what is already there.', acc:[/^echo ("run finished"|'run finished'|run finished) ?>> ?log\.txt$/], traps:[[/[^>]> ?log\.txt$/,'A single <code>&gt;</code> overwrites log.txt. Use <code>&gt;&gt;</code> to append.']], hint:'echo, then the append operator.', ans:'echo "run finished" >> log.txt', why:'<code>&gt;&gt;</code> appends.'},
+  {t:'cmd', q:'Run <code>./align.sh</code>, sending normal output to <code>align.out</code> and errors to <code>align.err</code>.', acc:[/^\.\/align\.sh ?> ?align\.out 2> ?align\.err$/, /^\.\/align\.sh 2> ?align\.err ?> ?align\.out$/, /^\.\/align\.sh 1> ?align\.out 2> ?align\.err$/], hint:'> for stdout, 2> for stderr.', ans:'./align.sh > align.out 2> align.err', why:'Stream 1 is stdout, stream 2 is stderr; each gets its own redirect.'},
+  {t:'mcq', q:'What is the difference between <code>|</code> and <code>&gt;</code>?', opts:['They are the same','| sends output to another command; > sends it to a file','| sends output to a file; > sends it to another command','| is for errors only'], a:1, why:'Pipes connect commands. Redirects connect a command to a file.'},
+  {t:'cmd', q:'Count the lines in <code>variants.vcf</code> that are NOT header lines (headers start with <code>#</code>).', acc:[/^grep -v (["'])\^#\1 variants\.vcf ?\| ?wc -l$/, /^grep -(vc|cv) (["'])\^#\2 variants\.vcf$/, /^grep -v \^# variants\.vcf ?\| ?wc -l$/, /^grep -(vc|cv) \^# variants\.vcf$/], hint:'grep -v inverts the match.', ans:'grep -v "^#" variants.vcf | wc -l', why:'<code>-v</code> keeps lines that do not match <code>^#</code>, i.e. the variant records.'}
+ ],
+ lab:['Run <code>ls nosuchfile &gt; out.txt</code>. Is the error in out.txt? Now try <code>2&gt; err.txt</code>.','Append three lines to a log with <code>&gt;&gt;</code>, then run one <code>&gt;</code> and watch the earlier lines disappear.']
+},
+{id:'scripts', title:'Writing scripts', blurb:'.sh, #!/bin/bash, chmod +x, $1, loops',
+ lessons:[
+  {h:'What a script is', when:'A <code>.sh</code> file is just commands you would type, saved in order. Write one as soon as you run the same steps twice. The extension is a label for humans; the shebang is what matters.', code:'#!/bin/bash\nset -euo pipefail\n\nSAMPLE=$1\necho "Counting reads for $SAMPLE"', watch:''},
+  {h:'The shebang: #!', when:'The first line, starting <code>#!</code>, tells the system which program runs the file. Use <code>#!/bin/bash</code> for bash, <code>#!/usr/bin/env python3</code> for Python, <code>#!/usr/bin/env Rscript</code> for R.', code:'#!/bin/bash                # bash script\n#!/usr/bin/env python3     # python script\n#!/usr/bin/env Rscript     # R script', watch:'It must be the very first line, with no space before <code>#!</code>.'},
+  {h:'Make it executable, then run it', when:'<code>chmod +x</code> once. Then run with <code>./script.sh</code>. Or skip chmod and run <code>bash script.sh</code>.', code:'$ chmod +x count_reads.sh\n$ ./count_reads.sh S1.fastq.gz\n$ bash count_reads.sh S1.fastq.gz   # also fine', watch:'<code>count_reads.sh</code> without <code>./</code> gives "command not found" unless the folder is on your PATH.'},
+  {h:'Arguments: $1, $2, $@', when:'Pass inputs on the command line so one script works for every sample. <code>$1</code> is the first argument, <code>$2</code> the second, <code>$@</code> all, <code>$#</code> how many.', code:'# ./align.sh S1 8\nSAMPLE=$1\nTHREADS=${2:-4}   # default 4 if not given', watch:''},
+  {h:'Safety line', when:'Put <code>set -euo pipefail</code> under the shebang. The script stops at the first error, on unset variables, and on failures inside pipes, instead of carrying on with broken files.', code:'#!/bin/bash\nset -euo pipefail', watch:''},
+  {h:'Loops and checks', when:'Use a <code>for</code> loop to repeat a step over files, and <code>if [ -f file ]</code> to check a file exists before using it.', code:'for fq in *_R1.fastq.gz; do\n  s=$(basename "$fq" _R1.fastq.gz)\n  echo "Processing $s"\ndone\n\nif [ ! -f "$REF" ]; then\n  echo "Missing $REF" >&2; exit 1\nfi', watch:'Spaces inside <code>[ ]</code> are required: <code>[ -f "$F" ]</code>.'}
+ ],
+ ex:[
+  {t:'mcq', q:'What does <code>#!/bin/bash</code> on line 1 do?', opts:['It is a comment and does nothing','It tells the system to run the file with bash','It makes the file executable','It loads the bash module'], a:1, why:'The shebang picks the interpreter. You still need <code>chmod +x</code> to make it executable.'},
+  {t:'cmd', q:'Type the shebang line for a bash script.', acc:[/^#! ?\/bin\/bash$/, /^#! ?\/usr\/bin\/env bash$/], traps:[[/^#\/bin/,'You need both characters: <code>#!</code>.'],[/^!#/,'Order matters: hash first, then bang: <code>#!</code>.']], hint:'#! then the path to bash.', ans:'#!/bin/bash', why:'<code>#!/usr/bin/env bash</code> is also correct; it finds bash on your PATH.'},
+  {t:'cmd', q:'Make <code>count_reads.sh</code> executable.', acc:[/^chmod (\+x|u\+x|a\+x|755|775|744|700) count_reads\.sh$/], hint:'chmod with +x.', ans:'chmod +x count_reads.sh', why:'<code>+x</code> adds execute permission.'},
+  {t:'cmd', q:'Run <code>count_reads.sh</code> (executable, in this folder) with <code>S1.fastq.gz</code> as the first argument.', acc:[/^\.\/count_reads\.sh S1\.fastq\.gz$/, /^bash (\.\/)?count_reads\.sh S1\.fastq\.gz$/], traps:[[/^count_reads\.sh/,'Without <code>./</code> bash only searches your PATH, not the current folder.']], hint:'./ in front.', ans:'./count_reads.sh S1.fastq.gz', why:'<code>./</code> means "the file in this folder". Inside the script that filename becomes <code>$1</code>.'},
+  {t:'mcq', q:'Inside a script run as <code>./align.sh S1 8</code>, which holds <code>8</code>?', opts:['$0','$1','$2','$#'], a:2, why:'<code>$0</code> is the script name, <code>$1</code> = S1, <code>$2</code> = 8, <code>$#</code> = 2 (the count).'},
+  {t:'script', q:'Write <code>count_reads.sh</code>. It takes a FASTQ.gz as the first argument, stores it in a variable <code>FQ</code>, and prints the filename and its read count.', start:'', checks:[
+     [s=>/^#! ?(\/bin\/bash|\/usr\/bin\/env bash)\s*$/.test(firstLine(s)),'Line 1 is a bash shebang'],
+     [/set -[a-z]*e/,'Has a safety line (set -euo pipefail)'],
+     [/^\s*FQ="?\$\{?1\}?"?\s*$/m,'Stores the first argument: FQ=$1'],
+     [/(zcat|gzcat|gunzip -c|gzip -dc)\s+"?\$\{?FQ\}?"?/,'Decompresses "$FQ" with zcat'],
+     [/wc -l|NR/,'Counts lines (wc -l)'],
+     [/\/\s*4/,'Divides by 4'],
+     [/echo[^\n]*\$\{?FQ\}?/,'Echoes the filename']],
+   ans:'#!/bin/bash\nset -euo pipefail\n\nFQ=$1\nN=$(( $(zcat "$FQ" | wc -l) / 4 ))\necho "$FQ: $N reads"', why:'This is the shape of almost every small bioinformatics script: shebang, safety, inputs, work, output.'},
+  {t:'script', q:'Write a <code>for</code> loop over every <code>*.fastq.gz</code> in the folder that prints <code>Processing &lt;filename&gt;</code>.', start:'', checks:[
+     [/for\s+(\w+)\s+in\s+\*\.fastq\.gz/,'for VAR in *.fastq.gz'],
+     [/(;|\n)\s*do\b/,'do'],
+     [/echo\s+"?Processing \$\{?\w+\}?/,'echo "Processing $VAR"'],
+     [/\bdone\b/,'done']],
+   ans:'for f in *.fastq.gz; do\n  echo "Processing $f"\ndone', why:'for … in … ; do … ; done. Each pass, <code>$f</code> holds one filename.'}
+ ],
+ lab:['Write <code>count_reads.sh</code> for real, <code>chmod +x</code> it, and run it on your test FASTQ.','Remove the shebang and <code>chmod +x</code> and see what happens. Then put it back.','Add a loop so the script accepts many files: <code>for FQ in "$@"; do ... done</code>.']
+},
+{id:'wrap', title:'PATH, bin & wrappers', blurb:'which, ~/bin, export PATH, source, wrapper scripts',
+ lessons:[
+  {h:'PATH: where commands live', when:'When you type <code>samtools</code>, bash searches each folder listed in <code>$PATH</code>, left to right. <code>which</code> tells you which file it found.', code:'$ echo $PATH\n/home/you/bin:/usr/local/bin:/usr/bin:/bin\n$ which samtools\n/apps/samtools/1.17/bin/samtools', watch:'"command not found" = no folder on PATH holds that program (or the module is not loaded).'},
+  {h:'Your own bin folder', when:'Keep finished, reusable scripts in <code>~/bin</code> (bin = binaries, i.e. runnable things) and add it to PATH once in <code>~/.bashrc</code>. Then you can call them from any folder by name.', code:'mkdir -p ~/bin\ncp count_reads.sh ~/bin/count_reads\nchmod +x ~/bin/count_reads\necho \'export PATH="$HOME/bin:$PATH"\' >> ~/.bashrc\nsource ~/.bashrc', watch:'Always keep <code>:$PATH</code> on the end. Without it you replace PATH and even <code>ls</code> stops working.'},
+  {h:'bash vs source', when:'<code>bash script.sh</code> runs in a new, separate shell; its variables vanish afterwards. <code>source script.sh</code> (or <code>. script.sh</code>) runs in your current shell, so variables and PATH changes stay. Use source for config files like <code>.bashrc</code> or <code>config.sh</code>.', code:'# config.sh\nREF=/refs/hg38.fa\nTHREADS=8\n\n# in your pipeline script\nsource config.sh\necho $REF', watch:''},
+  {h:'Wrapper scripts', when:'A wrapper is a small script whose job is to call other scripts in order, or once per sample. It keeps each step in its own file (easy to test and rerun) and gives you one command to run the whole thing.', code:'project/\n  bin/run_pipeline.sh      # the wrapper\n  scripts/01_qc.sh\n  scripts/02_align.sh\n  scripts/03_count.sh\n  config.sh\n\n# bin/run_pipeline.sh\n#!/bin/bash\nset -euo pipefail\nsource config.sh\nSAMPLE=$1\nbash scripts/01_qc.sh    "$SAMPLE"\nbash scripts/02_align.sh "$SAMPLE"\nbash scripts/03_count.sh "$SAMPLE"', watch:'Number the step scripts (01_, 02_) so the order is visible from <code>ls</code>.'}
+ ],
+ ex:[
+  {t:'cmd', q:'Find out which file runs when you type <code>samtools</code>.', acc:[/^which samtools$/, /^command -v samtools$/, /^type (-a )?samtools$/], hint:'A five-letter command.', ans:'which samtools', why:'<code>which</code> searches PATH and prints the first match.'},
+  {t:'cmd', q:'Print your PATH.', acc:[/^echo "?\$\{?PATH\}?"?$/], traps:[[/^echo PATH$/,'Add <code>$</code> to read the variable.']], hint:'It is a variable.', ans:'echo $PATH', why:'Folders are separated by colons.'},
+  {t:'cmd', q:'Add <code>~/bin</code> to the <b>front</b> of your PATH for this session.', acc:[/^export PATH="?(\$HOME|\$\{HOME\}|~|\/home\/\w+)\/bin:\$\{?PATH\}?"?$/, /^PATH="?(\$HOME|\$\{HOME\}|~|\/home\/\w+)\/bin:\$\{?PATH\}?"?$/], traps:[[/PATH="?(\$HOME|~)\/bin"?$/,'This replaces PATH entirely, so ls, cd helpers and samtools all disappear. Keep the old value: <code>:$PATH</code>.'],[/\$PATH:(\$HOME|~)\/bin/,'That adds it to the end. The task says the front.']], hint:'export PATH="NEW:$PATH"', ans:'export PATH="$HOME/bin:$PATH"', why:'New folder, colon, then the existing PATH.'},
+  {t:'cmd', q:'You edited <code>~/.bashrc</code>. Load the changes into your current shell without logging out.', acc:[/^(source|\.) ~\/\.bashrc$/, /^(source|\.) \$HOME\/\.bashrc$/], traps:[[/^bash ~\/\.bashrc/,'bash runs it in a separate shell, and the changes vanish when it ends. Use <code>source</code>.']], hint:'source.', ans:'source ~/.bashrc', why:'source runs the file in your current shell.'},
+  {t:'mcq', q:'<code>config.sh</code> sets <code>REF</code> and <code>THREADS</code>. You want those variables available in your pipeline script. Which line goes in the pipeline?', opts:['bash config.sh','./config.sh','source config.sh','export config.sh'], a:2, why:'Only <code>source</code> runs config.sh inside the same shell, so the variables remain.'},
+  {t:'script', q:'Write the wrapper <code>run_pipeline.sh</code>: bash shebang, safety line, take the sample name as the first argument into <code>SAMPLE</code>, then call <code>scripts/01_qc.sh</code>, <code>scripts/02_align.sh</code> and <code>scripts/03_count.sh</code>, each with the sample.', start:'', checks:[
+     [s=>/^#! ?(\/bin\/bash|\/usr\/bin\/env bash)\s*$/.test(firstLine(s)),'Line 1 is a bash shebang'],
+     [/set -[a-z]*e/,'Safety line'],
+     [/^\s*SAMPLE="?\$\{?1\}?"?\s*$/m,'SAMPLE=$1'],
+     [/01_qc\.sh\s+"?\$\{?SAMPLE\}?"?/,'Calls 01_qc.sh with "$SAMPLE"'],
+     [/02_align\.sh\s+"?\$\{?SAMPLE\}?"?/,'Calls 02_align.sh with "$SAMPLE"'],
+     [/03_count\.sh\s+"?\$\{?SAMPLE\}?"?/,'Calls 03_count.sh with "$SAMPLE"']],
+   ans:'#!/bin/bash\nset -euo pipefail\n\nSAMPLE=$1\nbash scripts/01_qc.sh    "$SAMPLE"\nbash scripts/02_align.sh "$SAMPLE"\nbash scripts/03_count.sh "$SAMPLE"', why:'Because of <code>set -e</code>, if QC fails the wrapper stops before aligning.'}
+ ],
+ lab:['Make <code>~/bin</code>, put one script there, add it to PATH in <code>~/.bashrc</code>, <code>source</code> it, then run the script from your home folder by name.','Run <code>which</code> on <code>ls</code>, <code>python3</code>, and your new script.','Build the wrapper layout above with three tiny step scripts that just <code>echo</code> their name and sample.']
+},
+{id:'module', title:'HPC modules', blurb:'module avail, spider, load, list, purge',
+ lessons:[
+  {h:'Why modules exist', when:'A cluster has many tools in many versions. They are hidden until you load them, so nothing clashes. If a tool says "command not found" on the cluster, the first thing to try is loading its module.', code:'$ samtools\nbash: samtools: command not found\n$ module load samtools/1.17\n$ samtools --version | head -1\nsamtools 1.17', watch:''},
+  {h:'Find: avail and spider', when:'<code>module avail</code> lists everything you can load right now (often a long list). <code>module avail samtools</code> filters it. <code>module spider samtools</code> (Lmod clusters) searches every version, including ones that need another module loaded first, and tells you how to load them.', code:'$ module avail samtools\n   samtools/1.15   samtools/1.17 (D)\n$ module spider samtools/1.17', watch:'<code>(D)</code> marks the default version.'},
+  {h:'Load, list, unload, purge', when:'<code>load</code> adds a tool, <code>list</code> shows what is loaded, <code>unload</code> removes one, <code>purge</code> removes everything. Start job scripts with <code>module purge</code> so they do not depend on whatever you had loaded.', code:'module purge\nmodule load samtools/1.17 bwa/0.7.17\nmodule list', watch:'Pin versions in scripts (<code>samtools/1.17</code>, not <code>samtools</code>). The default can change and silently change your results.'},
+  {h:'Inspect', when:'<code>module show samtools/1.17</code> prints what loading it does (which folder it adds to PATH). Handy when something seems wrong.', code:'$ module show samtools/1.17', watch:'Some clusters use <code>ml</code> as a shortcut: <code>ml samtools/1.17</code>, <code>ml</code> = list.'}
+ ],
+ ex:[
+  {t:'cmd', q:'See which versions of samtools the cluster offers.', acc:[/^module (avail|av|spider) samtools$/, /^ml (avail|av|spider) samtools$/], hint:'module + avail + name.', ans:'module avail samtools', why:'Or <code>module spider samtools</code> on Lmod for the full picture.'},
+  {t:'cmd', q:'Load samtools version 1.17.', acc:[/^module (load|add) samtools\/1\.17$/, /^ml samtools\/1\.17$/], traps:[[/^module load samtools$/,'That loads the default version. Pin it: <code>samtools/1.17</code>.'],[/samtools-1\.17|samtools 1\.17/,'Module names use a slash between tool and version.']], hint:'module load tool/version', ans:'module load samtools/1.17', why:'Exact versions make your analysis reproducible.'},
+  {t:'cmd', q:'Show the modules currently loaded.', acc:[/^module (list|li)$/, /^ml$/], hint:'module + one word.', ans:'module list', why:''},
+  {t:'cmd', q:'Unload everything to start from a clean slate.', acc:[/^module purge$/, /^ml purge$/], hint:'A word meaning "clear out".', ans:'module purge', why:'Do this at the top of job scripts.'},
+  {t:'mcq', q:'Why write <code>module load samtools/1.17</code> in a script instead of <code>module load samtools</code>?', opts:['It runs faster','The default version can change, which can silently change results','samtools will not load without a version','It uses less memory'], a:1, why:'Reproducibility: rerun next year, get the same tool.'},
+  {t:'mcq', q:'On the cluster you type <code>bwa</code> and get "command not found". Most likely fix?', opts:['Reinstall Linux','chmod +x bwa','module load bwa/&lt;version&gt;','cd into the bwa folder'], a:2, why:'The tool is installed but not on your PATH until its module is loaded.'}
+ ],
+ lab:['On your cluster run <code>module avail</code> and skim. Then <code>module avail</code> for three tools you use (samtools, fastqc, R).','Load one, run <code>which</code> on it, then <code>module show</code> it and find the folder it added to PATH.','<code>module purge</code>, then <code>which samtools</code> again.']
+},
+{id:'slurm', title:'SLURM jobs, CPU & GPU', blurb:'#SBATCH, --time=, sbatch, squeue, arrays',
+ lessons:[
+  {h:'Login node vs compute node', when:'The login node is for editing, moving files and submitting. Anything heavy (alignment, sorting a BAM, R on big matrices) goes to compute nodes through the scheduler, or an interactive session.', code:'$ sbatch align.sbatch                       # batch job\n$ srun --pty -c 4 --mem=8G -t 1:00:00 bash  # interactive', watch:'Running bwa on the login node slows it for everyone and may get your process killed.'},
+  {h:'Anatomy of a job script', when:'A job script is a normal bash script. After the shebang come <code>#SBATCH</code> lines (requests to the scheduler), then <code>module</code> lines, then your commands. The <code>#SBATCH</code> lines must come before the first command.', code:'#!/bin/bash\n#SBATCH --job-name=align_S1\n#SBATCH --time=04:00:00\n#SBATCH --cpus-per-task=8\n#SBATCH --mem=32G\n#SBATCH --output=logs/%x_%j.out\n\nset -euo pipefail\nmodule purge\nmodule load bwa/0.7.17 samtools/1.17\n\nbwa mem -t $SLURM_CPUS_PER_TASK ref.fa R1.fq.gz R2.fq.gz \\\n  | samtools sort -@ 4 -o S1.bam', watch:'The <code>.sbatch</code> or <code>.slurm</code> extension is only a naming habit; it is still a bash script.'},
+  {h:'The format of options', when:'Long options use two dashes and <code>=</code> with no spaces: <code>--time=04:00:00</code>. Short forms use one dash and a space: <code>-t 04:00:00</code>, <code>-c 8</code>. Time is <code>HH:MM:SS</code> or <code>D-HH:MM:SS</code>.', code:'--time=30:00          # 30 minutes\n--time=04:30:00       # 4.5 hours\n--time=2-00:00:00     # 2 days\n--mem=16G             # memory per node\n--partition=gpu       # which queue', watch:'If the job exceeds <code>--time</code> or <code>--mem</code>, SLURM kills it. Check the .out log for "TIMEOUT" or "OUT_OF_MEMORY".'},
+  {h:'CPU or GPU?', when:'Ask for CPUs with <code>--cpus-per-task</code> and pass the same number to the tool\'s thread option. Ask for a GPU (<code>--gres=gpu:1</code>, usually on a gpu partition) only when the tool is built for GPUs: deep-learning basecallers (dorado), AlphaFold, GPU-accelerated aligners (Parabricks), PyTorch models. bwa, STAR, samtools, featureCounts and most R packages are CPU-only.', code:'#SBATCH --cpus-per-task=8\nSTAR --runThreadN $SLURM_CPUS_PER_TASK ...\n\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\ndorado basecaller ...', watch:'A GPU requested for a CPU tool sits idle and you wait longer in the GPU queue.'},
+  {h:'Submit and watch', when:'<code>sbatch</code> submits, <code>squeue -u $USER</code> (or <code>squeue --me</code>) shows your jobs, <code>scancel</code> stops one, <code>sacct -j ID</code> shows how it ended.', code:'$ sbatch align.sbatch S1\nSubmitted batch job 4815162\n$ squeue -u $USER\n$ scancel 4815162\n$ sacct -j 4815162 --format=JobID,State,Elapsed,MaxRSS', watch:'Arguments after the script name become <code>$1</code>, <code>$2</code> inside it, same as any script.'},
+  {h:'Many samples: loop or array', when:'Loop over a sample list and <code>sbatch</code> each, or use a job array where <code>$SLURM_ARRAY_TASK_ID</code> picks the line.', code:'# loop\nwhile read s; do sbatch align.sbatch "$s"; done < samples.txt\n\n# array (in the job script)\n#SBATCH --array=1-24\nSAMPLE=$(sed -n "${SLURM_ARRAY_TASK_ID}p" samples.txt)', watch:''}
+ ],
+ ex:[
+  {t:'mcq', q:'Which <code>--time</code> means 2 days and 6 hours?', opts:['--time=2:06:00','--time=54','--time=2-06:00:00','--time=06:00:00:02'], a:2, why:'Days come first, then a dash: <code>D-HH:MM:SS</code>.'},
+  {t:'cmd', q:'Write the <code>#SBATCH</code> line requesting 4 hours 30 minutes.', acc:[/^#SBATCH --time=0?4:30:00$/, /^#SBATCH -t 0?4:30:00$/, /^#SBATCH --time=270$/], traps:[[/--time 0?4:30/,'Long options take <code>=</code>: <code>--time=04:30:00</code>.'],[/^--time/,'In a script it needs the <code>#SBATCH</code> prefix.'],[/--time=4:30$/,'<code>4:30</code> is read as 4 minutes 30 seconds. Write HH:MM:SS.']], hint:'#SBATCH --time=HH:MM:SS', ans:'#SBATCH --time=04:30:00', why:''},
+  {t:'cmd', q:'Write the <code>#SBATCH</code> line asking for 8 CPU cores for your task.', acc:[/^#SBATCH --cpus-per-task=8$/, /^#SBATCH -c ?8$/], traps:[[/--ntasks=8|-n ?8/,'<code>--ntasks</code> is for running 8 separate processes (MPI). Multithreaded tools want <code>--cpus-per-task</code>.']], hint:'--cpus-per-task', ans:'#SBATCH --cpus-per-task=8', why:'Then inside the script use <code>$SLURM_CPUS_PER_TASK</code> for the tool\'s threads.'},
+  {t:'cmd', q:'Write the <code>#SBATCH</code> line requesting one GPU.', acc:[/^#SBATCH --gres=gpu(:\w+)?:1$/, /^#SBATCH --gpus(-per-node|-per-task)?=1$/, /^#SBATCH -G ?1$/], hint:'gres = generic resource.', ans:'#SBATCH --gres=gpu:1', why:'Most clusters also want <code>--partition=gpu</code> (name varies; check your cluster docs).'},
+  {t:'mcq', q:'You are aligning RNA-seq with STAR. What do you request?', opts:['One GPU','Several CPUs and enough memory (STAR needs ~32 GB for human)','A GPU and 1 CPU','Nothing; run it on the login node'], a:1, why:'STAR is a CPU tool: <code>--cpus-per-task</code>, plenty of <code>--mem</code>, and <code>--runThreadN $SLURM_CPUS_PER_TASK</code>.'},
+  {t:'cmd', q:'Submit <code>align.sbatch</code> to the queue.', acc:[/^sbatch align\.sbatch$/], traps:[[/^(bash|\.\/|sh )/,'That runs it right here on the login node. <code>sbatch</code> hands it to the scheduler.'],[/^srun/,'srun runs interactively and waits. For a batch job use sbatch.']], hint:'s + batch.', ans:'sbatch align.sbatch', why:'SLURM replies with a job ID.'},
+  {t:'cmd', q:'Show only your own jobs in the queue.', acc:[/^squeue (-u|--user) ?(\$USER|\$\{USER\}|"\$USER"|\w+)$/, /^squeue --me$/], hint:'squeue, filtered by user.', ans:'squeue -u $USER', why:'<code>$USER</code> holds your username. Columns: ST = state (PD pending, R running).'},
+  {t:'cmd', q:'Cancel job <code>4815162</code>.', acc:[/^scancel 4815162$/], hint:'s + cancel.', ans:'scancel 4815162', why:'<code>scancel -u $USER</code> would cancel all of yours, so use with care.'},
+  {t:'cmd', q:'Inside the job, run <code>bwa mem</code> with as many threads as you requested, on <code>ref.fa R1.fq.gz R2.fq.gz</code>, saving to <code>S1.sam</code>.', acc:[/^bwa mem -t "?\$\{?SLURM_CPUS_PER_TASK\}?"? ref\.fa R1\.fq\.gz R2\.fq\.gz ?> ?S1\.sam$/], traps:[[/-t ?\d/,'A hard-coded number works but drifts out of sync with <code>#SBATCH</code>. Use <code>$SLURM_CPUS_PER_TASK</code>.']], hint:'-t $SLURM_CPUS_PER_TASK', ans:'bwa mem -t $SLURM_CPUS_PER_TASK ref.fa R1.fq.gz R2.fq.gz > S1.sam', why:'SLURM fills that variable from your <code>--cpus-per-task</code>.'},
+  {t:'cmd', q:'Submit one job per line of <code>samples.txt</code>, passing each sample to <code>align.sbatch</code>.', acc:[/^while (IFS= )?read (-r )?(\w+); ?do sbatch align\.sbatch "?\$\{?\3\}?"?; ?done ?< ?samples\.txt$/, /^for (\w+) in \$\(cat samples\.txt\); ?do sbatch align\.sbatch "?\$\{?\1\}?"?; ?done$/], hint:'while read s; do ... ; done < samples.txt', ans:'while read s; do sbatch align.sbatch "$s"; done < samples.txt', why:'<code>read</code> pulls one line at a time into <code>$s</code>; <code>&lt; samples.txt</code> feeds the loop.'},
+  {t:'script', q:'Write <code>align.sbatch</code>: bash shebang; job name <code>align</code>; 6 hours; 8 CPUs; 32G memory; output to <code>logs/%x_%j.out</code>; purge and load <code>bwa/0.7.17</code>; take the sample as <code>$1</code>; run <code>bwa mem</code> with the requested threads on <code>ref.fa ${SAMPLE}_R1.fq.gz ${SAMPLE}_R2.fq.gz</code> into <code>${SAMPLE}.sam</code>.', start:'#!/bin/bash\n', checks:[
+     [s=>/^#! ?(\/bin\/bash|\/usr\/bin\/env bash)\s*$/.test(firstLine(s)),'Line 1 is a bash shebang'],
+     [/^#SBATCH (--job-name=|-J ?)align\s*$/m,'#SBATCH --job-name=align'],
+     [/^#SBATCH (--time=|-t ?)0?6:00:00\s*$/m,'#SBATCH --time=06:00:00'],
+     [/^#SBATCH (--cpus-per-task=|-c ?)8\s*$/m,'#SBATCH --cpus-per-task=8'],
+     [/^#SBATCH --mem=32(G|GB|000M?)\s*$/m,'#SBATCH --mem=32G'],
+     [/^#SBATCH (--output=|-o ?)logs\/%x_%j\.out\s*$/m,'#SBATCH --output=logs/%x_%j.out'],
+     [s=>sbatchBeforeCommands(s),'All #SBATCH lines come before the first command'],
+     [/^\s*module purge/m,'module purge'],
+     [/^\s*(module load|ml) [^\n]*bwa\/0\.7\.17/m,'module load bwa/0.7.17'],
+     [/^\s*SAMPLE="?\$\{?1\}?"?\s*$/m,'SAMPLE=$1'],
+     [/bwa mem -t "?\$\{?SLURM_CPUS_PER_TASK\}?"?/,'bwa mem -t $SLURM_CPUS_PER_TASK'],
+     [/\$\{SAMPLE\}_R1\.fq\.gz/,'Uses ${SAMPLE}_R1.fq.gz (with braces)'],
+     [/>\s*"?\$\{?SAMPLE\}?\.sam"?/,'Writes to ${SAMPLE}.sam']],
+   ans:'#!/bin/bash\n#SBATCH --job-name=align\n#SBATCH --time=06:00:00\n#SBATCH --cpus-per-task=8\n#SBATCH --mem=32G\n#SBATCH --output=logs/%x_%j.out\n\nset -euo pipefail\nmodule purge\nmodule load bwa/0.7.17\n\nSAMPLE=$1\nbwa mem -t $SLURM_CPUS_PER_TASK ref.fa \\\n  ${SAMPLE}_R1.fq.gz ${SAMPLE}_R2.fq.gz > ${SAMPLE}.sam', why:'<code>%x</code> = job name, <code>%j</code> = job ID, so every run gets its own log. Make the <code>logs/</code> folder before submitting, or SLURM cannot write there.'}
+ ],
+ lab:['Submit a tiny test job that only runs <code>hostname; sleep 30; echo done</code>. Watch it in <code>squeue -u $USER</code> and read its .out file.','Deliberately give it <code>--time=00:00:10</code> and see how a TIMEOUT looks in the log and in <code>sacct</code>.','Find your cluster\'s docs page and note: partition names, GPU partition name, max time.']
+},
+{id:'rpy', title:'Shell vs R vs Python', blurb:'pwd vs getwd(), Rscript, commandArgs, extensions',
+ lessons:[
+  {h:'Read the prompt first', when:'The prompt tells you which language you are typing in. <code>$</code> (or <code>[you@login01 ~]$</code>) = shell. <code>&gt;</code> = R console. <code>&gt;&gt;&gt;</code> = Python. Typing shell commands into R (or R into the shell) is the most common beginner mix-up.', code:'[you@login01 project]$ pwd          # shell\n> getwd()                            # R\n>>> import os; os.getcwd()           # Python', watch:''},
+  {h:'Same job, three languages', when:'Use the shell to move files and chain tools. Use R or Python for statistics, tables and plots. Many tasks have a version in each.', code:'TASK            SHELL       R                  PYTHON\nwhere am I      pwd         getwd()            os.getcwd()\nmove            cd dir      setwd("dir")       os.chdir("dir")\nlist files      ls          list.files()       os.listdir()\nprint           echo "hi"   print("hi")        print("hi")\nvariable        x=5         x <- 5             x = 5', watch:'In R, paths are strings in quotes: <code>setwd("~/project")</code>.'},
+  {h:'Run R and Python scripts from the shell', when:'In pipelines and SLURM jobs you run R and Python non-interactively: <code>Rscript file.R args</code>, <code>python3 file.py args</code>. Read the arguments inside the script.', code:'# shell\nRscript de_analysis.R counts.tsv results/\n\n# inside de_analysis.R\nargs <- commandArgs(trailingOnly = TRUE)\ncounts_file <- args[1]\nout_dir     <- args[2]\n\n# python equivalent\nimport sys\ncounts_file = sys.argv[1]', watch:'In R, <code>args[1]</code> is the first argument (R counts from 1). In Python <code>sys.argv[1]</code> is the first one, because <code>sys.argv[0]</code> is the script name.'},
+  {h:'File extensions you will meet', when:'Extensions tell humans (and some tools) what is inside.', code:'.sh  .bash    bash script\n.sbatch .slurm job script (still bash)\n.R   .Rmd     R script / R Markdown\n.py  .ipynb   Python script / Jupyter notebook\n.smk          Snakemake  |  .nf  Nextflow\n.fastq.gz     raw reads  |  .fa/.fasta  sequences\n.sam .bam     alignments |  .bai  BAM index\n.vcf.gz       variants   |  .bed .gtf  annotations', watch:''}
+ ],
+ ex:[
+  {t:'mcq', q:'The prompt is <code>&gt;</code> in the RStudio console. How do you show the working directory?', opts:['pwd','getwd()','echo $PWD','os.getcwd()'], a:1, why:'You are in R, so use the R function.'},
+  {t:'mcq', q:'The prompt is <code>[you@login01 ~]$</code>. How do you show the working directory?', opts:['getwd()','pwd','print(dir)','wd'], a:1, why:'The <code>$</code> means you are in the shell.'},
+  {t:'cmd', ctx:'(R console)', ps:'>', q:'In R, set the working directory to <code>~/project</code>.', acc:[/^setwd\((["'])~\/project\/?\1\)$/], traps:[[/^cd /,'That is shell. In R the function is <code>setwd()</code>.'],[/^setwd\(~/,'In R the path is a string, so it needs quotes.']], hint:'setwd("...")', ans:'setwd("~/project")', why:''},
+  {t:'cmd', q:'From the shell, run <code>de_analysis.R</code> with <code>counts.tsv</code> as its argument.', acc:[/^Rscript (\.\/)?de_analysis\.R counts\.tsv$/], traps:[[/^R de_analysis/,'Plain <code>R</code> opens the interactive console. Use <code>Rscript</code>.'],[/^(bash|\.\/)/,'bash cannot read R code. Use <code>Rscript</code>.']], hint:'Rscript file args', ans:'Rscript de_analysis.R counts.tsv', why:''},
+  {t:'mcq', q:'Inside <code>de_analysis.R</code>, how do you get that <code>counts.tsv</code> argument?', opts:['$1','sys.argv[1]','commandArgs(trailingOnly = TRUE)[1]','args$1'], a:2, why:'<code>commandArgs(trailingOnly = TRUE)</code> returns only your arguments; <code>[1]</code> is the first.'},
+  {t:'mcq', q:'Is a <code>.sbatch</code> file a different language from a <code>.sh</code> file?', opts:['Yes, it is SLURM language','No, both are bash; .sbatch is just a naming habit','Yes, it needs a special interpreter','Only on GPU nodes'], a:1, why:'Both are bash. The <code>#SBATCH</code> lines are bash comments that SLURM happens to read.'},
+  {t:'mcq', q:'Which file is the index for <code>S1.bam</code>?', opts:['S1.bed','S1.bam.bai','S1.fai','S1.idx'], a:1, why:'<code>samtools index S1.bam</code> creates S1.bam.bai. (.fai is the index of a FASTA.)'}
+ ],
+ lab:['Write a 3-line R script that prints <code>commandArgs(trailingOnly = TRUE)</code>, then run it with <code>Rscript test.R a b c</code>.','Add <code>#!/usr/bin/env Rscript</code> on top, <code>chmod +x</code> it, and run it as <code>./test.R a b</code>.','Call that R script from a bash script, inside a SLURM job, after <code>module load R/&lt;version&gt;</code>.']
+},
+{id:'git', title:'Git & GitHub', blurb:'init, status, add, commit, push, pull, .gitignore',
+ lessons:[
+  {h:'What git is for', when:'Git keeps the history of your <b>code</b> (scripts, notes, configs) so you can see what changed, undo mistakes, and share with GitHub. Use it for every project from day one.', code:'$ cd ~/project\n$ git init\nInitialized empty Git repository in /home/you/project/.git/', watch:'Git is for code, not data. Keep FASTQ, BAM and large results out of it.'},
+  {h:'The daily loop', when:'Edit files, then: <code>git status</code> (what changed?), <code>git add</code> (choose what goes in), <code>git commit -m</code> (save a snapshot with a message), <code>git push</code> (send to GitHub).', code:'$ git status\n$ git add scripts/count_reads.sh\n$ git commit -m "Add read counting script"\n$ git push', watch:'Run <code>git status</code> constantly. It tells you what to do next.'},
+  {h:'.gitignore', when:'List files git should never track. Put it in the project root and commit it.', code:'# .gitignore\ndata/\n*.fastq.gz\n*.bam\n*.bai\nlogs/\n.Rhistory', watch:'GitHub refuses files over 100 MB, and a pushed BAM is painful to remove from history.'},
+  {h:'Working with GitHub', when:'<code>git clone URL</code> copies an existing repo. For your own new project, create an empty repo on GitHub, then connect it with <code>git remote add origin URL</code> and <code>git push -u origin main</code> the first time. <code>git pull</code> brings down others\' changes.', code:'$ git clone https://github.com/lab/rnaseq-pipeline.git\n$ git remote add origin git@github.com:you/project.git\n$ git push -u origin main\n$ git pull', watch:''},
+  {h:'Look back', when:'<code>git log --oneline</code> shows history; <code>git diff</code> shows unstaged changes line by line.', code:'$ git log --oneline\na1b2c3d Add read counting script\n9f8e7d6 Initial commit', watch:''}
+ ],
+ ex:[
+  {t:'cmd', q:'Turn the current project folder into a git repository.', acc:[/^git init$/], hint:'git + initialise.', ans:'git init', why:'Creates a hidden <code>.git</code> folder that stores the history.'},
+  {t:'cmd', q:'See which files changed and what is staged.', acc:[/^git status( -s)?$/], hint:'git + state of things.', ans:'git status', why:''},
+  {t:'cmd', q:'Stage <code>count_reads.sh</code> for the next commit.', acc:[/^git add (\.\/)?count_reads\.sh$/], hint:'git add file', ans:'git add count_reads.sh', why:'Staging chooses exactly what goes into the commit.'},
+  {t:'cmd', q:'Commit with the message <code>Add read counting script</code>.', acc:[/^git commit -m (["'])Add read counting script\1$/], traps:[[/^git commit -m Add/,'Wrap the message in quotes, or bash splits it into separate words.']], hint:'git commit -m "..."', ans:'git commit -m "Add read counting script"', why:'Write messages that say what the change does.'},
+  {t:'cmd', q:'Download the repository <code>https://github.com/lab/rnaseq-pipeline.git</code>.', acc:[/^git clone https:\/\/github\.com\/lab\/rnaseq-pipeline(\.git)?$/], hint:'git clone URL', ans:'git clone https://github.com/lab/rnaseq-pipeline.git', why:''},
+  {t:'cmd', q:'Send your commits to GitHub (remote <code>origin</code>, branch <code>main</code>).', acc:[/^git push( -u)?( origin main)?$/, /^git push origin main$/], hint:'git push origin main', ans:'git push origin main', why:'After the first <code>git push -u origin main</code>, plain <code>git push</code> is enough.'},
+  {t:'cmd', q:'Get your labmate\'s new commits from GitHub into your copy.', acc:[/^git pull( origin main)?$/], hint:'The opposite of push.', ans:'git pull', why:''},
+  {t:'cmd', q:'With one shell command, add the pattern <code>*.bam</code> to <code>.gitignore</code> (keep what is already there).', acc:[/^echo (["'])\*\.bam\1 ?>> ?\.gitignore$/, /^echo \*\.bam ?>> ?\.gitignore$/], traps:[[/[^>]> ?\.gitignore$/,'A single <code>&gt;</code> would wipe your existing .gitignore. Append with <code>&gt;&gt;</code>.']], hint:'echo + append.', ans:'echo "*.bam" >> .gitignore', why:'Pipes & redirection, reused.'},
+  {t:'mcq', q:'What is the right order to publish a change?', opts:['commit → add → push','add → commit → push','push → add → commit','add → push → commit'], a:1, why:'Stage, snapshot, send.'},
+  {t:'cmd', q:'Show the project history, one line per commit.', acc:[/^git log --oneline( -n ?\d+| -\d+)?$/], hint:'git log with a flag.', ans:'git log --oneline', why:''}
+ ],
+ lab:['Run <code>git init</code> in your <code>~/practice</code> folder, write a <code>.gitignore</code> with <code>data/</code>, and make your first commit.','Create a free GitHub repo, connect it with <code>git remote add origin ...</code>, and push.','Daily habit: end every practice session with <code>git add</code>, <code>git commit -m "Day N: ..."</code>, <code>git push</code>. Your GitHub becomes your practice log.']
+},
+/* ---------------- GENOMICS WORKFLOWS ---------------- */
+{id:'qc', sec:'Genomics workflows', title:'QC & trimming', blurb:'FastQC, MultiQC, fastp, Trim Galore, cutadapt',
+ lessons:[
+  {h:'FastQC: first look at raw reads', when:'Run it the moment you receive FASTQ files, and again after trimming. It writes one <code>_fastqc.html</code> report (open in a browser) and one <code>.zip</code> per file. <code>-t</code> sets threads, <code>-o</code> the output folder (which must already exist).', code:'$ mkdir -p qc/raw\n$ fastqc -t 4 -o qc/raw data/*.fastq.gz\n$ ls qc/raw\nS1_R1_fastqc.html  S1_R1_fastqc.zip ...', watch:'Run it on a compute node or in a job when you have many files.'},
+  {h:'MultiQC: all samples on one page', when:'After FastQC (and later STAR, featureCounts, fastp, bowtie2…), run MultiQC on the folder. It finds every log it understands and builds one report, so an odd sample stands out.', code:'$ multiqc qc/ -o qc/multiqc\n# open qc/multiqc/multiqc_report.html', watch:''},
+  {h:'Reading the FastQC report', when:'<b>Per base sequence quality</b>: boxes in the green zone (Phred ≥ 28) are good; quality dropping at the 3\' end is normal. <b>Adapter content</b>: a curve rising toward the 3\' end means you must trim adapters. <b>Per base sequence content</b>: a FAIL over the first ~10–12 bases is expected in RNA-seq (random hexamer priming), not a problem. <b>Sequence duplication</b>: high in RNA-seq is normal (very highly expressed genes); in WGS or ChIP-seq it suggests PCR duplicates or low input. <b>Per sequence GC content</b>: two peaks can mean contamination.', code:'Phred  error rate   accuracy\nQ10    1 in 10      90%\nQ20    1 in 100     99%\nQ30    1 in 1,000   99.9%\nQ40    1 in 10,000  99.99%', watch:'FastQC\'s pass/warn/fail flags assume random genomic DNA. Judge each module against your assay type.'},
+  {h:'fastp: trim + QC in one step', when:'A fast all-in-one trimmer. For paired-end data give both files together so pairs stay in sync.', code:'fastp \\\n  -i S1_R1.fastq.gz -I S1_R2.fastq.gz \\\n  -o trimmed/S1_R1.fastq.gz -O trimmed/S1_R2.fastq.gz \\\n  --detect_adapter_for_pe \\\n  -q 20 -l 36 -w 8 \\\n  -h qc/S1.fastp.html -j qc/S1.fastp.json\n\n# -i/-I  inputs R1/R2      -o/-O  outputs R1/R2\n# -q 20  a base is "good" if Phred >= 20\n# -l 36  drop reads shorter than 36 after trimming\n# -w 8   threads   -h/-j  reports (MultiQC reads the .json)', watch:''},
+  {h:'Trim Galore and cutadapt', when:'Trim Galore wraps cutadapt, auto-detects the Illumina adapter, and can run FastQC afterwards. Use cutadapt directly when you know the exact adapter (small RNA, custom libraries).', code:'trim_galore --paired --quality 20 --length 36 --fastqc \\\n  -o trimmed S1_R1.fastq.gz S1_R2.fastq.gz\n# -> trimmed/S1_R1_val_1.fq.gz  trimmed/S1_R2_val_2.fq.gz\n\ncutadapt -a AGATCGGAAGAGC -A AGATCGGAAGAGC -q 20 -m 36 \\\n  -o out_R1.fq.gz -p out_R2.fq.gz S1_R1.fastq.gz S1_R2.fastq.gz\n# -a/-A adapter on R1/R2   -m minimum length   -p paired output', watch:'Trim gently for RNA-seq (Q20 is plenty). Aggressive quality trimming throws away real data and can bias expression.'}
+ ],
+ ex:[
+  {t:'cmd', q:'Run FastQC on every <code>.fastq.gz</code> in <code>data/</code>, with 4 threads, writing reports to <code>qc/raw</code> (already created).', acc:[has(/^fastqc /,/(-t|--threads)[ =]4\b/,/(-o|--outdir)[ =]qc\/raw\/?( |$)/,/data\/\*\.fastq\.gz( |$)/)], traps:[[/^fastqc data\/\*\.fastq\.gz$/,'That works, but writes reports next to your data and uses 1 thread. Add <code>-t 4 -o qc/raw</code>.']], hint:'fastqc -t … -o … files', ans:'fastqc -t 4 -o qc/raw data/*.fastq.gz', why:'If <code>qc/raw</code> does not exist, FastQC stops with an error, so <code>mkdir -p</code> it first.'},
+  {t:'cmd', q:'Combine every report in <code>qc/</code> into one MultiQC report in <code>qc/multiqc</code>.', acc:[/^multiqc (qc\/? (-o|--outdir)[ =]qc\/multiqc\/?|(-o|--outdir)[ =]qc\/multiqc\/? qc\/?)$/], hint:'multiqc FOLDER -o OUTDIR', ans:'multiqc qc/ -o qc/multiqc', why:'MultiQC scans the folder recursively for any log it recognises.'},
+  {t:'mcq', q:'RNA-seq FastQC: <b>Per base sequence content</b> FAILS over the first 12 bases only. What do you do?', opts:['Trim 12 bases from every read','Nothing: this is the expected random-hexamer priming bias in RNA-seq','Discard the sample','Re-sequence'], a:1, why:'It is a known artefact of library prep, and aligners handle it fine. Trimming it off only loses data.'},
+  {t:'mcq', q:'<b>Adapter content</b> rises to 30% toward the 3\' end of the reads. What does it mean?', opts:['The library is contaminated with bacteria','Many inserts were shorter than the read length, so the sequencer read into the adapter: trim adapters','Quality is too low; discard the run','Duplication is too high'], a:1, why:'Short fragments make the read run past the insert into the adapter. Trimming removes it before alignment.'},
+  {t:'mcq', q:'A base with quality Q30 has what chance of being wrong?', opts:['1 in 30','1 in 100','1 in 1,000','30%'], a:2, why:'Phred Q = −10·log10(error). Q30 → 10⁻³ = 1 in 1,000.'},
+  {t:'script', q:'Write the <code>fastp</code> command for paired reads <code>S1_R1.fastq.gz</code> / <code>S1_R2.fastq.gz</code>. Outputs go to <code>trimmed/</code> with the same names. Auto-detect paired-end adapters, quality cut-off 20, minimum length 36, 8 threads, and write both an HTML and a JSON report. You can split lines with <code>\\</code>.', start:'fastp \\\n  ', checks:[
+     [/^\s*fastp\b/m,'Starts with fastp'],
+     [/(-i|--in1)[ =]S1_R1\.fastq\.gz/,'-i S1_R1.fastq.gz (read 1 in)'],
+     [/(-I|--in2)[ =]S1_R2\.fastq\.gz/,'-I S1_R2.fastq.gz (read 2 in)'],
+     [/(-o|--out1)[ =]trimmed\/S1_R1\.fastq\.gz/,'-o trimmed/S1_R1.fastq.gz'],
+     [/(-O|--out2)[ =]trimmed\/S1_R2\.fastq\.gz/,'-O trimmed/S1_R2.fastq.gz'],
+     [/--detect_adapter_for_pe/,'--detect_adapter_for_pe'],
+     [/(-q|--qualified_quality_phred)[ =]20\b/,'-q 20'],
+     [/(-l|--length_required)[ =]36\b/,'-l 36'],
+     [/(-w|--thread)[ =]8\b/,'-w 8'],
+     [/(-h|--html)[ =]\S+\.html/,'-h something.html'],
+     [/(-j|--json)[ =]\S+\.json/,'-j something.json (MultiQC reads it)']],
+   ans:'fastp \\\n  -i S1_R1.fastq.gz -I S1_R2.fastq.gz \\\n  -o trimmed/S1_R1.fastq.gz -O trimmed/S1_R2.fastq.gz \\\n  --detect_adapter_for_pe -q 20 -l 36 -w 8 \\\n  -h qc/S1.fastp.html -j qc/S1.fastp.json', why:'Lowercase <code>-i/-o</code> are read 1; uppercase <code>-I/-O</code> are read 2. The <code>\\</code> at a line end means "the command continues on the next line"; nothing may follow it, not even a space.'},
+  {t:'cmd', q:'Run Trim Galore on <code>S1_R1.fastq.gz</code> and <code>S1_R2.fastq.gz</code> as a pair, quality 20, minimum length 36, run FastQC afterwards, output to <code>trimmed</code>.', acc:[has(/^trim_galore /,/--paired\b/,/(-q|--quality)[ =]20\b/,/--length[ =]36\b/,/--fastqc\b/,/(-o|--output_dir)[ =]trimmed\/?( |$)/,/S1_R1\.fastq\.gz S1_R2\.fastq\.gz$/)], traps:[[/^trim_galore (?!.*--paired)/,'Without <code>--paired</code> the two files are trimmed independently and the pairs fall out of sync.']], hint:'trim_galore --paired … R1 R2 (input files last)', ans:'trim_galore --paired --quality 20 --length 36 --fastqc -o trimmed S1_R1.fastq.gz S1_R2.fastq.gz', why:'Output names end in <code>_val_1.fq.gz</code> / <code>_val_2.fq.gz</code>.'},
+  {t:'mcq', q:'Why must paired-end files be trimmed together in one command?', opts:['It is faster','If a read is dropped from R1 but kept in R2, the files fall out of order and the aligner pairs the wrong reads','R2 has no adapters','FastQC requires it'], a:1, why:'Paired tools drop both mates together, keeping line N of R1 matched to line N of R2.'},
+  {t:'mcq', q:'In <code>cutadapt … -m 36</code>, what does <code>-m 36</code> do?', opts:['Trims 36 bases from every read','Discards reads shorter than 36 bp after trimming','Sets 36 threads','Sets minimum quality 36'], a:1, why:'Very short reads map ambiguously, so they are removed.'}
+ ],
+ lab:['Get a tiny paired-end test set (the nf-core/test-datasets repository on GitHub has small FASTQs for most assays) and run FastQC on it.','Trim with fastp, run FastQC on the trimmed reads, then one MultiQC over both. Compare the Adapter content plot before and after.','Turn it into <code>01_qc_trim.sbatch</code> that takes the sample name as <code>$1</code>.']
+},
+{id:'rnaseq', sec:'Genomics workflows', title:'RNA-seq', blurb:'STAR, featureCounts, salmon, DESeq2',
+ lessons:[
+  {h:'The pipeline', when:'Two common routes. <b>Alignment</b>: trim → STAR (or HISAT2) → BAM → featureCounts → count matrix → DESeq2. Use it when you also want BAMs (to view in IGV, find splicing, call variants). <b>Pseudo-alignment</b>: trim → salmon (or kallisto) → tximport → DESeq2. Faster, less memory, gives transcript-level estimates.', code:'FASTQ ─ fastp ─┬─ STAR ── BAM ── featureCounts ─┐\n               └─ salmon ── quant.sf ── tximport ┴─ DESeq2 (R)', watch:''},
+  {h:'STAR: build the index once', when:'Build one index per genome + annotation + read length, and reuse it for every project. <code>--sjdbOverhang</code> = read length − 1. Human needs ~32 GB RAM.', code:'STAR --runMode genomeGenerate \\\n  --genomeDir star_idx \\\n  --genomeFastaFiles genome.fa \\\n  --sjdbGTFfile genes.gtf \\\n  --sjdbOverhang 99 \\\n  --runThreadN 8', watch:'Genome FASTA and GTF must come from the same source and version (e.g. both GENCODE v44, or both Ensembl 110). Mixing "chr1" with "1" gives zero counts.'},
+  {h:'STAR: align a sample', when:'Run per sample inside a job script. Read <code>Log.final.out</code> afterwards: "Uniquely mapped reads %" around 70–90% is typical for good human/mouse data.', code:'STAR --genomeDir star_idx \\\n  --readFilesIn S1_R1.fastq.gz S1_R2.fastq.gz \\\n  --readFilesCommand zcat \\\n  --outSAMtype BAM SortedByCoordinate \\\n  --outFileNamePrefix aligned/S1_ \\\n  --quantMode GeneCounts \\\n  --runThreadN $SLURM_CPUS_PER_TASK', watch:'<code>--readFilesCommand zcat</code> is needed because the FASTQs are gzipped.'},
+  {h:'featureCounts: reads per gene', when:'Counts aligned reads over genes in the GTF, for all BAMs at once. The key parameter is <b>strandedness</b> <code>-s</code>: 0 unstranded, 1 stranded, 2 reversely stranded (most dUTP / TruSeq Stranded kits). If unsure, try all three on one sample and keep the one with by far the most assigned reads, or check STAR\'s ReadsPerGene columns.', code:'featureCounts -T 8 -p --countReadPairs -s 2 \\\n  -a genes.gtf -o counts.txt aligned/*.bam\n\n# -p --countReadPairs  paired-end: count fragments (Subread >= 2.0.2)\n# counts.txt.summary   how many reads were Assigned / NoFeature / Ambiguous', watch:'Wrong <code>-s</code> is the classic silent error: the run "works" but most reads land in Unassigned_NoFeatures.'},
+  {h:'salmon: fast transcript quantification', when:'<code>-l A</code> lets salmon detect library type; <code>quant.sf</code> holds per-transcript estimates. Import into R with tximport.', code:'salmon quant -i salmon_idx -l A \\\n  -1 S1_R1.fastq.gz -2 S1_R2.fastq.gz \\\n  -p 8 --validateMappings -o salmon/S1', watch:''},
+  {h:'DESeq2 in R', when:'Give DESeq2 <b>raw integer counts</b> (never TPM or normalised values) plus a sample table. The design formula names the variable you compare; <code>contrast</code> says which level is compared to which. Use <code>padj</code> (multiple-testing adjusted), not <code>pvalue</code>.', code:'library(DESeq2)\ndds <- DESeqDataSetFromMatrix(countData = counts,\n                              colData   = meta,\n                              design    = ~ condition)\ndds <- DESeq(dds)\nres <- results(dds, contrast = c("condition", "treated", "control"))\nsum(res$padj < 0.05, na.rm = TRUE)', watch:'Column names of <code>counts</code> must match the row names of <code>meta</code>, in the same order.'}
+ ],
+ ex:[
+  {t:'mcq', q:'Your reads are 2 × 150 bp. What <code>--sjdbOverhang</code> do you use when building the STAR index?', opts:['150','149','300','75'], a:1, why:'Read length − 1. (100 is a fine generic value too; it is the max overhang STAR considers around splice junctions.)'},
+  {t:'mcq', q:'Your kit is Illumina TruSeq Stranded (dUTP). Which featureCounts setting is usually right?', opts:['-s 0','-s 1','-s 2','-p 2'], a:2, why:'dUTP libraries are reversely stranded. Confirm with the summary file: the right setting gives far more Assigned reads.'},
+  {t:'cmd', q:'Count all BAMs (<code>*.bam</code>) with featureCounts: 8 threads, paired-end counting fragments, reversely stranded, annotation <code>genes.gtf</code>, output <code>counts.txt</code>.', acc:[has(/^featureCounts /,/-T ?8\b/,/(^| )-p( |$)/,/--countReadPairs\b/,/-s ?2\b/,/-a genes\.gtf( |$)/,/-o counts\.txt( |$)/,/\*\.bam$/)], traps:[[/^featureCounts (?!.*--countReadPairs)(?=.*-p)/,'In Subread 2.0.2 and later, <code>-p</code> alone counts reads; add <code>--countReadPairs</code> to count fragments.']], hint:'featureCounts -T -p --countReadPairs -s -a -o BAMS (BAMs last)', ans:'featureCounts -T 8 -p --countReadPairs -s 2 -a genes.gtf -o counts.txt *.bam', why:'Input BAMs go last. Check <code>counts.txt.summary</code> right after.'},
+  {t:'cmd', q:'Run salmon on sample S1 (<code>S1_R1.fastq.gz</code>, <code>S1_R2.fastq.gz</code>) using index <code>salmon_idx</code>, automatic library type, 8 threads, output folder <code>salmon/S1</code>.', acc:[has(/^salmon quant /,/(-i|--index)[ =]salmon_idx\/?( |$)/,/(-l|--libType)[ =]A( |$)/,/(-1|--mates1)[ =]S1_R1\.fastq\.gz/,/(-2|--mates2)[ =]S1_R2\.fastq\.gz/,/(-p|--threads)[ =]8\b/,/(-o|--output)[ =]salmon\/S1\/?( |$)/)], hint:'salmon quant -i -l -1 -2 -p -o', ans:'salmon quant -i salmon_idx -l A -1 S1_R1.fastq.gz -2 S1_R2.fastq.gz -p 8 -o salmon/S1', why:'The result is <code>salmon/S1/quant.sf</code>; <code>lib_format_counts.json</code> tells you which strandedness salmon detected.'},
+  {t:'script', q:'Inside a job script, after <code>SAMPLE=$1</code>, write the STAR alignment for <code>${SAMPLE}_R1.fastq.gz</code> / <code>${SAMPLE}_R2.fastq.gz</code>: index <code>star_idx</code>, gzipped input, coordinate-sorted BAM, output prefix in <code>aligned/</code> named after the sample, gene counts on, threads from SLURM.', start:'SAMPLE=$1\n\nSTAR \\\n  ', checks:[
+     [/STAR\b[\s\S]*--genomeDir[ =]\S*star_idx/,'--genomeDir star_idx'],
+     [/--readFilesIn[ =]"?\$\{SAMPLE\}_R1\.fastq\.gz"?\s+"?\$\{SAMPLE\}_R2\.fastq\.gz"?/,'--readFilesIn ${SAMPLE}_R1.fastq.gz ${SAMPLE}_R2.fastq.gz'],
+     [/--readFilesCommand[ =]"?(zcat|gunzip -c)"?/,'--readFilesCommand zcat'],
+     [/--outSAMtype[ =]BAM SortedByCoordinate/,'--outSAMtype BAM SortedByCoordinate'],
+     [/--outFileNamePrefix[ =]"?aligned\/\$\{?SAMPLE\}?/,'--outFileNamePrefix aligned/${SAMPLE}_'],
+     [/--quantMode[ =]GeneCounts/,'--quantMode GeneCounts'],
+     [/--runThreadN[ =]"?\$\{?SLURM_CPUS_PER_TASK\}?/,'--runThreadN $SLURM_CPUS_PER_TASK']],
+   ans:'SAMPLE=$1\n\nSTAR --genomeDir star_idx \\\n  --readFilesIn ${SAMPLE}_R1.fastq.gz ${SAMPLE}_R2.fastq.gz \\\n  --readFilesCommand zcat \\\n  --outSAMtype BAM SortedByCoordinate \\\n  --outFileNamePrefix aligned/${SAMPLE}_ \\\n  --quantMode GeneCounts \\\n  --runThreadN $SLURM_CPUS_PER_TASK', why:'The prefix ends in <code>_</code>, so files come out as <code>aligned/S1_Aligned.sortedByCoord.out.bam</code>, <code>aligned/S1_Log.final.out</code>, etc.'},
+  {t:'mcq', q:'STAR\'s <code>Log.final.out</code> says "Uniquely mapped reads % | 31%" for a human sample. Most likely?', opts:['Normal for RNA-seq','Something is wrong: wrong genome/species, heavy rRNA or adapter contamination, or a degraded sample','The BAM was not sorted','featureCounts failed'], a:1, why:'Good libraries usually map 70–90% uniquely. Check species, adapter trimming, and rRNA content (FastQC overrepresented sequences).'},
+  {t:'mcq', q:'What do you give DESeq2 as <code>countData</code>?', opts:['TPM values from salmon','Raw integer read counts per gene','log2 CPM','FPKM'], a:1, why:'DESeq2 models raw counts and does its own normalisation. For salmon output, use tximport to bring in counts properly.'},
+  {t:'cmd', ctx:'(R console) counts and meta are loaded', ps:'>', q:'Create the DESeq2 object from matrix <code>counts</code>, sample table <code>meta</code>, comparing by <code>condition</code>. Store it in <code>dds</code>.', acc:[has(/^dds ?<- ?DESeqDataSetFromMatrix\(/,/countData ?= ?counts\b/,/colData ?= ?meta\b/,/design ?= ?~ ?condition\b/,/\)$/)], traps:[[/design ?= ?condition/,'The design is a formula, so it needs a tilde: <code>~ condition</code>.'],[/^dds ?= /,'<code>=</code> works in R too, but <code>&lt;-</code> is the R convention for assignment.']], hint:'DESeqDataSetFromMatrix(countData = , colData = , design = ~ )', ans:'dds <- DESeqDataSetFromMatrix(countData = counts, colData = meta, design = ~ condition)', why:'With a batch effect you would write <code>design = ~ batch + condition</code> (variable of interest last).'},
+  {t:'cmd', ctx:'(R console) dds <- DESeq(dds) has run', ps:'>', q:'Get results for <b>treated vs control</b> in the <code>condition</code> column. Store them in <code>res</code>.', acc:[/^res ?<- ?results\(dds, ?contrast ?= ?c\((["'])condition\1, ?(["'])treated\2, ?(["'])control\3\)\)$/], traps:[[/c\((["'])condition\1, ?(["'])control\2, ?(["'])treated\3\)/,'Order matters: numerator first. This gives control vs treated, so every fold change flips sign.']], hint:'results(dds, contrast = c("variable", "numerator", "denominator"))', ans:'res <- results(dds, contrast = c("condition", "treated", "control"))', why:'Positive log2FoldChange then means higher in treated.'},
+  {t:'mcq', q:'Which column do you filter on to call genes differentially expressed?', opts:['pvalue < 0.05','padj < 0.05','baseMean > 0.05','log2FoldChange < 0.05'], a:1, why:'Testing ~20,000 genes produces about 1,000 false hits at p < 0.05. <code>padj</code> controls the false discovery rate.'}
+ ],
+ lab:['Build a tiny STAR index for one chromosome (e.g. chr22 FASTA + GTF from GENCODE) so it fits a small job.','Align a test sample, read <code>Log.final.out</code>, then run featureCounts with <code>-s 0</code>, <code>1</code> and <code>2</code> and compare the <code>.summary</code> files.','Follow the DESeq2 vignette in R with the built-in <code>pasilla</code> example data.']
+},
+{id:'chip', sec:'Genomics workflows', title:'ChIP-seq', blurb:'bowtie2, MAPQ, dedup, MACS3, bigWig, FRiP',
+ lessons:[
+  {h:'The pipeline', when:'Trim → align with bowtie2 → keep confidently mapped reads (MAPQ filter) → remove PCR duplicates → call peaks against the <b>input control</b> with MACS3 → QC (FRiP, fingerprint) → bigWig tracks for IGV.', code:'FASTQ ─ trim ─ bowtie2 ─ MAPQ≥30 ─ dedup ─┬─ MACS3 (IP vs input) ─ peaks\n                                          └─ bamCoverage ─ bigWig', watch:'Always sequence an input (or IgG) control. Without it, open chromatin and copy-number gains look like peaks.'},
+  {h:'bowtie2 alignment', when:'<code>-x</code> is the index <b>prefix</b> (the files are hg38.1.bt2, hg38.2.bt2…). The alignment summary is printed on stderr, so save it with <code>2&gt;</code>.', code:'bowtie2 -p 8 -x hg38 \\\n  -1 S1_R1.fastq.gz -2 S1_R2.fastq.gz 2> S1.bt2.log \\\n  | samtools view -b -q 30 - \\\n  | samtools sort -o S1.bam\n\n# -q 30   keep MAPQ >= 30 (uniquely, confidently placed)\n# -       read from the pipe instead of a file', watch:''},
+  {h:'Remove PCR duplicates', when:'Identical fragments from PCR inflate peaks. Remove them for ChIP-seq (not usually for RNA-seq).', code:'# Picard\npicard MarkDuplicates I=S1.bam O=S1.dedup.bam \\\n  M=S1.dup_metrics.txt REMOVE_DUPLICATES=true\n\n# or samtools (paired-end)\nsamtools sort -n -o S1.nsort.bam S1.bam\nsamtools fixmate -m S1.nsort.bam S1.fix.bam\nsamtools sort -o S1.pos.bam S1.fix.bam\nsamtools markdup -r S1.pos.bam S1.dedup.bam', watch:''},
+  {h:'MACS3 peak calling', when:'<code>-t</code> treatment (IP), <code>-c</code> control (input), <code>-f BAMPE</code> for paired-end, <code>-g</code> genome size (<code>hs</code> human, <code>mm</code> mouse), <code>-n</code> name prefix. Transcription factors and sharp marks (H3K4me3, H3K27ac): default narrow peaks. Broad marks (H3K27me3, H3K36me3, H3K9me3): add <code>--broad</code>.', code:'macs3 callpeak -t S1_IP.bam -c S1_input.bam \\\n  -f BAMPE -g hs -n S1 --outdir peaks -q 0.01\n# -> peaks/S1_peaks.narrowPeak  S1_summits.bed  S1_peaks.xls', watch:'Older clusters have <code>macs2</code>; the callpeak options are the same.'},
+  {h:'Tracks and QC', when:'Make normalised bigWigs with deepTools to view in IGV. FRiP (fraction of reads in peaks) measures enrichment: ENCODE treats FRiP above 1% as acceptable for TF ChIP; histone marks are typically much higher.', code:'bamCoverage -b S1.dedup.bam -o S1.bw \\\n  --normalizeUsing CPM --binSize 10 -p 8\n\n# FRiP\nIN=$(bedtools intersect -u -a S1.dedup.bam -b peaks/S1_peaks.narrowPeak | samtools view -c)\nALL=$(samtools view -c S1.dedup.bam)\necho "scale=4; $IN / $ALL" | bc', watch:'<code>bc</code> does decimals; bash <code>$(( ))</code> only does whole numbers.'}
+ ],
+ ex:[
+  {t:'mcq', q:'Why do you need an input control in ChIP-seq?', opts:['To increase read depth','To model background: open chromatin, copy-number and mappability biases that would otherwise look like peaks','To remove adapters','It is only for RNA-seq'], a:1, why:'MACS compares local IP signal to the control at the same spot.'},
+  {t:'mcq', q:'You ChIP\'d H3K27me3. Which MACS3 setting matters most?', opts:['--broad','-f BAM','-q 0.5','--nomodel'], a:0, why:'H3K27me3 covers wide domains; narrow-peak mode fragments them into many small peaks.'},
+  {t:'mcq', q:'What does <code>samtools view -q 30</code> keep?', opts:['The first 30 reads','Reads with base quality ≥ 30','Reads with mapping quality (MAPQ) ≥ 30','30% of reads'], a:2, why:'MAPQ says how sure the aligner is about the location. Multi-mapping reads get low MAPQ.'},
+  {t:'script', q:'Align <code>S1_R1.fastq.gz</code> / <code>S1_R2.fastq.gz</code> with bowtie2 (index prefix <code>hg38</code>, 8 threads), save the alignment summary to <code>S1.bt2.log</code>, keep MAPQ ≥ 30 as BAM, and sort into <code>S1.bam</code>, all in one pipe.', start:'', checks:[
+     [/^\s*bowtie2\b/m,'Starts with bowtie2'],
+     [/-x[ =]hg38(\s|$)/,'-x hg38 (prefix, not a file name)'],
+     [/(-p|--threads)[ =]8\b/,'-p 8'],
+     [/-1[ =]S1_R1\.fastq\.gz/,'-1 S1_R1.fastq.gz'],
+     [/-2[ =]S1_R2\.fastq\.gz/,'-2 S1_R2.fastq.gz'],
+     [/2>\s*S1\.bt2\.log/,'2> S1.bt2.log (the summary is on stderr)'],
+     [/\|\s*samtools view\b[^|]*-b/,'| samtools view -b'],
+     [/samtools view\b[^|]*-b?q ?30/,'-q 30'],
+     [/\|\s*samtools sort\b[^|\n]*-o[ =]S1\.bam/,'| samtools sort -o S1.bam']],
+   ans:'bowtie2 -p 8 -x hg38 -1 S1_R1.fastq.gz -2 S1_R2.fastq.gz 2> S1.bt2.log \\\n  | samtools view -b -q 30 - \\\n  | samtools sort -o S1.bam', why:'No SAM file ever touches the disk, which saves a lot of space.'},
+  {t:'cmd', q:'Remove duplicates with Picard: input <code>S1.bam</code>, output <code>S1.dedup.bam</code>, metrics to <code>S1.dup_metrics.txt</code>.', acc:[has(/^(picard|java -jar \S*picard\.jar) MarkDuplicates /,/(^| )(-?I|INPUT)[= ]S1\.bam( |$)/,/(^| )(-?O|OUTPUT)[= ]S1\.dedup\.bam( |$)/,/(^| )(-?M|METRICS_FILE)[= ]S1\.dup_metrics\.txt( |$)/,/REMOVE_DUPLICATES[= ]true/i)], traps:[[/^picard MarkDuplicates (?!.*REMOVE_DUPLICATES)/,'Without <code>REMOVE_DUPLICATES=true</code> Picard only flags duplicates. MACS3 ignores flagged ones, but other tools may not.']], hint:'picard MarkDuplicates I= O= M= REMOVE_DUPLICATES=true', ans:'picard MarkDuplicates I=S1.bam O=S1.dedup.bam M=S1.dup_metrics.txt REMOVE_DUPLICATES=true', why:'The metrics file has PERCENT_DUPLICATION; MultiQC can plot it.'},
+  {t:'cmd', q:'Call narrow peaks: IP <code>S1_IP.bam</code>, control <code>S1_input.bam</code>, paired-end BAM, human genome size, name <code>S1</code>, output folder <code>peaks</code>.', acc:[has(/^macs[23] callpeak /,/(-t|--treatment)[ =]S1_IP\.bam/,/(-c|--control)[ =]S1_input\.bam/,/(-f|--format)[ =]BAMPE\b/,/(-g|--gsize)[ =]hs\b/,/(-n|--name)[ =]S1( |$)/,/--outdir[ =]peaks\/?( |$)/)], traps:[[/-f BAM( |$)/,'<code>-f BAM</code> treats paired data as single reads and estimates fragment size. For paired-end use <code>BAMPE</code>.']], hint:'macs3 callpeak -t -c -f -g -n --outdir', ans:'macs3 callpeak -t S1_IP.bam -c S1_input.bam -f BAMPE -g hs -n S1 --outdir peaks', why:'For mouse use <code>-g mm</code>.'},
+  {t:'cmd', q:'Make a CPM-normalised bigWig <code>S1.bw</code> from <code>S1.dedup.bam</code>, bin size 10, 8 processors.', acc:[has(/^bamCoverage /,/(-b|--bam)[ =]S1\.dedup\.bam/,/(-o|--outFileName)[ =]S1\.bw/,/--normalizeUsing[ =]CPM\b/,/(-bs|--binSize)[ =]10\b/,/(-p|--numberOfProcessors)[ =]8\b/)], hint:'bamCoverage -b -o --normalizeUsing --binSize -p', ans:'bamCoverage -b S1.dedup.bam -o S1.bw --normalizeUsing CPM --binSize 10 -p 8', why:'The BAM must be sorted and indexed (<code>samtools index</code>) first.'},
+  {t:'mcq', q:'A transcription-factor ChIP has FRiP = 0.3%. What does it suggest?', opts:['Excellent enrichment','Weak or failed enrichment: few reads fall in peaks','Too many duplicates removed','Normal for histone marks'], a:1, why:'ENCODE flags TF ChIP below ~1% FRiP. Check antibody, the fingerprint plot, and peak count.'}
+ ],
+ lab:['Run bowtie2 on a test ChIP sample and read the log: what is the overall alignment rate?','Dedup, call peaks with and without the input control, and compare peak counts.','Load the bigWig and narrowPeak file in IGV and look at a known target gene.']
+},
+{id:'sc', sec:'Genomics workflows', title:'Single-cell RNA-seq', blurb:'Cell Ranger, Seurat, Scanpy, QC thresholds',
+ lessons:[
+  {h:'What is in 10x FASTQs', when:'For 10x 3\' gene expression: <b>R1</b> holds the cell barcode (16 bp) + UMI (12 bp), <b>R2</b> holds the cDNA (the actual transcript), <b>I1/I2</b> are sample indexes. Only R2 aligns to the genome; R1 tells you which cell and which molecule.', code:'S1_S1_L001_R1_001.fastq.gz   barcode + UMI\nS1_S1_L001_R2_001.fastq.gz   cDNA\nS1_S1_L001_I1_001.fastq.gz   sample index', watch:'Do not adapter-trim 10x reads with standard tools; Cell Ranger handles them.'},
+  {h:'Cell Ranger count', when:'Turns FASTQs into a cell × gene matrix. Heavy: run it as a SLURM job. <code>--id</code> names the output folder, <code>--sample</code> matches the FASTQ prefix. Recent versions (8+) require you to say whether to write a BAM.', code:'cellranger count --id=S1 \\\n  --transcriptome=/refs/refdata-gex-GRCh38-2024-A \\\n  --fastqs=fastq/ --sample=S1 \\\n  --create-bam=true \\\n  --localcores=16 --localmem=64\n# -> S1/outs/web_summary.html\n#    S1/outs/filtered_feature_bc_matrix/', watch:'Open <code>web_summary.html</code> first: estimated cells, median genes per cell, fraction of reads in cells, sequencing saturation.'},
+  {h:'Cell QC', when:'Remove empty droplets, damaged cells and likely doublets. Look at three numbers per cell: genes detected (<code>nFeature_RNA</code>), UMIs (<code>nCount_RNA</code>), and percent mitochondrial reads. High %mito = broken or dying cells; very high gene counts can be doublets. Choose thresholds from the violin plots of your own data; tissue matters.', code:'obj <- CreateSeuratObject(Read10X("S1/outs/filtered_feature_bc_matrix"),\n                          min.cells = 3, min.features = 200)\nobj[["percent.mt"]] <- PercentageFeatureSet(obj, pattern = "^MT-")\nVlnPlot(obj, c("nFeature_RNA", "nCount_RNA", "percent.mt"))\nobj <- subset(obj, subset = nFeature_RNA > 200 &\n                            nFeature_RNA < 6000 & percent.mt < 15)', watch:'Mouse mitochondrial genes are lowercase: <code>"^mt-"</code>. A human pattern on mouse data gives 0% everywhere.'},
+  {h:'Seurat standard workflow', when:'After QC: normalise, find variable genes, scale, PCA, choose dimensions (ElbowPlot), build the neighbour graph, cluster, embed with UMAP, find marker genes. <code>resolution</code> controls how many clusters you get (higher = more).', code:'obj <- NormalizeData(obj)\nobj <- FindVariableFeatures(obj, nfeatures = 2000)\nobj <- ScaleData(obj)\nobj <- RunPCA(obj)\nElbowPlot(obj)\nobj <- FindNeighbors(obj, dims = 1:20)\nobj <- FindClusters(obj, resolution = 0.5)\nobj <- RunUMAP(obj, dims = 1:20)\nmarkers <- FindAllMarkers(obj, only.pos = TRUE)', watch:'Use the same <code>dims</code> in FindNeighbors and RunUMAP.'},
+  {h:'Same steps in Scanpy (Python)', when:'Use Scanpy when your lab works in Python or with very large datasets.', code:'import scanpy as sc\nadata = sc.read_10x_h5("S1/outs/filtered_feature_bc_matrix.h5")\nadata.var["mt"] = adata.var_names.str.startswith("MT-")\nsc.pp.calculate_qc_metrics(adata, qc_vars=["mt"], inplace=True)\nsc.pp.filter_cells(adata, min_genes=200)\nadata = adata[adata.obs.pct_counts_mt < 15].copy()\nsc.pp.normalize_total(adata, target_sum=1e4)\nsc.pp.log1p(adata)\nsc.pp.highly_variable_genes(adata, n_top_genes=2000)\nsc.tl.pca(adata)\nsc.pp.neighbors(adata, n_pcs=20)\nsc.tl.leiden(adata, resolution=0.5)\nsc.tl.umap(adata)', watch:'Doublet detection: scDblFinder (R) or Scrublet (Python), run per sample before merging.'}
+ ],
+ ex:[
+  {t:'mcq', q:'In 10x 3\' data, what is in Read 1?', opts:['The cDNA sequence','The cell barcode and UMI','The sample index','Adapter only'], a:1, why:'R1 tags each read with its cell and molecule; R2 carries the transcript sequence.'},
+  {t:'cmd', q:'Run Cell Ranger for sample <code>S1</code>: output id <code>S1</code>, reference <code>/refs/refdata-gex-GRCh38-2024-A</code>, FASTQs in <code>fastq/</code>, and write a BAM.', acc:[has(/^cellranger count /,/--id[ =]S1( |$)/,/--transcriptome[ =]\/refs\/refdata-gex-GRCh38-2024-A\/?( |$)/,/--fastqs[ =]fastq\/?( |$)/,/--sample[ =]S1( |$)/,/--create-bam[ =]true\b/)], traps:[[/^cellranger count (?!.*--create-bam)/,'Cell Ranger 8 and later stop with an error unless you set <code>--create-bam=true</code> or <code>false</code>.']], hint:'cellranger count --id= --transcriptome= --fastqs= --sample= --create-bam=', ans:'cellranger count --id=S1 --transcriptome=/refs/refdata-gex-GRCh38-2024-A --fastqs=fastq/ --sample=S1 --create-bam=true', why:'In a job, add <code>--localcores=$SLURM_CPUS_PER_TASK</code> and <code>--localmem</code> slightly below your <code>--mem</code>.'},
+  {t:'mcq', q:'A cluster of cells has 40% mitochondrial reads. Most likely?', opts:['A rare, highly active cell type','Damaged or dying cells whose cytoplasmic RNA leaked out','Doublets','Perfectly healthy cells'], a:1, why:'When the membrane breaks, cytoplasmic mRNA is lost but mitochondrial transcripts stay, so the % rises. (Some tissues like heart muscle naturally run higher; judge per tissue.)'},
+  {t:'cmd', ctx:'(R console) Seurat object obj, human data', ps:'>', q:'Add a <code>percent.mt</code> column with the percentage of mitochondrial reads per cell.', acc:[/^obj\[\[(["'])percent\.mt\1\]\] ?<- ?PercentageFeatureSet\(obj, ?pattern ?= ?(["'])\^MT-\2\)$/], traps:[[/\^mt-/,'Lowercase <code>^mt-</code> is mouse. This is human data: <code>^MT-</code>.'],[/pattern ?= ?(["'])MT-/,'Add <code>^</code> so it only matches gene names that START with MT-.']], hint:'obj[["percent.mt"]] <- PercentageFeatureSet(obj, pattern = "...")', ans:'obj[["percent.mt"]] <- PercentageFeatureSet(obj, pattern = "^MT-")', why:'<code>^</code> anchors to the start of the gene name.'},
+  {t:'cmd', ctx:'(R console)', ps:'>', q:'Keep cells with more than 200 and fewer than 6000 genes, and under 15% mitochondrial reads.', acc:[has(/^obj ?<- ?subset\(obj, ?subset ?= ?/,/nFeature_RNA ?> ?200\b/,/nFeature_RNA ?< ?6000\b/,/percent\.mt ?< ?15\b/,/\)$/)], traps:[[/ and | && /,'In R, combine conditions in subset() with a single <code>&amp;</code>.']], hint:'subset(obj, subset = A & B & C)', ans:'obj <- subset(obj, subset = nFeature_RNA > 200 & nFeature_RNA < 6000 & percent.mt < 15)', why:'Pick numbers from your own violin plots.'},
+  {t:'mcq', q:'You raise <code>FindClusters(resolution = 0.5)</code> to <code>1.2</code>. What happens?', opts:['Fewer, bigger clusters','More, smaller clusters','UMAP becomes sharper','Nothing'], a:1, why:'Higher resolution splits the graph into more communities. Check whether new clusters have distinct markers.'},
+  {t:'cmd', ctx:'(Python)', ps:'>>>', q:'With Scanpy, remove cells with fewer than 200 genes from <code>adata</code>.', acc:[/^sc\.pp\.filter_cells\(adata, ?min_genes ?= ?200\)$/], hint:'sc.pp.filter_cells(…, min_genes=…)', ans:'sc.pp.filter_cells(adata, min_genes=200)', why:'Seurat\'s <code>nFeature_RNA &gt; 200</code> in Scanpy terms.'},
+  {t:'script', ps:'>', q:'Write the Seurat steps after QC (R): normalise, 2000 variable features, scale, PCA, neighbours on dims 1:20, clusters at resolution 0.5, UMAP on dims 1:20. Keep reassigning to <code>obj</code>.', start:'obj <- NormalizeData(obj)\n', checks:[
+     [/NormalizeData\(/,'NormalizeData'],
+     [/FindVariableFeatures\([^)]*nfeatures ?= ?2000/,'FindVariableFeatures(…, nfeatures = 2000)'],
+     [/ScaleData\(/,'ScaleData'],
+     [/RunPCA\(/,'RunPCA'],
+     [/FindNeighbors\([^)]*dims ?= ?1:20/,'FindNeighbors(…, dims = 1:20)'],
+     [/FindClusters\([^)]*resolution ?= ?0?\.5\b/,'FindClusters(…, resolution = 0.5)'],
+     [/RunUMAP\([^)]*dims ?= ?1:20/,'RunUMAP(…, dims = 1:20)'],
+     [s=>{const o=['NormalizeData','FindVariableFeatures','ScaleData','RunPCA','FindNeighbors','FindClusters'].map(f=>s.indexOf(f));return o.every(i=>i>=0)&&o.every((v,i)=>i===0||v>o[i-1]);},'Steps in the right order']],
+   ans:'obj <- NormalizeData(obj)\nobj <- FindVariableFeatures(obj, nfeatures = 2000)\nobj <- ScaleData(obj)\nobj <- RunPCA(obj)\nobj <- FindNeighbors(obj, dims = 1:20)\nobj <- FindClusters(obj, resolution = 0.5)\nobj <- RunUMAP(obj, dims = 1:20)', why:'Neighbours must exist before clustering; PCA before neighbours. (SCTransform can replace the first three steps.)'}
+ ],
+ lab:['Download a small public 10x dataset (10x Genomics publishes 1k-cell PBMC sets) and work through the Seurat "PBMC 3k" guided tutorial.','Make the QC violin plots and write down why you chose each threshold.','Run the same data through Scanpy and compare cluster numbers at the same resolution.']
+}
+];
+const BASES='ACGT';
+
+/* ============================== HELPERS ============================== */
+function firstLine(s){return (s.split('\n').find(l=>l.trim()!=='')||'').trim();}
+function sbatchBeforeCommands(s){
+  const lines=s.split('\n').map(l=>l.trim()).filter(Boolean);
+  let seenCmd=false, any=false;
+  for(const l of lines){
+    if(l.startsWith('#!')) continue;
+    if(/^#SBATCH/.test(l)){any=true; if(seenCmd) return false; continue;}
+    if(l.startsWith('#')) continue;
+    seenCmd=true;
+  }
+  return any;
+}
+function norm(s){return s.trim().replace(/\s+/g,' ').replace(/\s*;\s*$/,'');}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function codeHTML(s){
+  return s.split('\n').map(l=>{
+    let e=esc(l);
+    if(/^\s*#(?!!|SBATCH)/.test(l)) return '<span class="c">'+e+'</span>';
+    e=e.replace(/^(\$ |&gt; |&gt;&gt;&gt; )/,'<span class="p">$1</span>');
+    e=e.replace(/(\s#\s.*)$/,'<span class="c">$1</span>');
+    return e;
+  }).join('\n');
+}
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
+function exId(m,i){return m.id+':'+i;}
+
+/* ============================== STATE ============================== */
+const KEY='bench2bash-v1';
+let S={done:{},days:{},mins:{}};
+try{const raw=localStorage.getItem(KEY); if(raw) S=Object.assign(S,JSON.parse(raw));}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+function rec(id){return S.done[id]||(S.done[id]={ok:false,tries:0,peek:false,miss:0});}
+function markOk(id){const r=rec(id); if(!r.ok){r.ok=true;} r.last=today(); if(r.peek){r.miss=(r.miss||0)+1;} r.peek=false; S.days[today()]=(S.days[today()]||0)+1; save(); renderNav();}
+function markTry(id){rec(id).tries++; save();}
+function markPeek(id){const r=rec(id); r.peek=true; r.miss=(r.miss||0)+1; save();}
+
+function modProgress(m){return m.ex.filter((e,i)=>S.done[exId(m,i)]&&S.done[exId(m,i)].ok).length;}
+function totalEx(){return MODULES.reduce((a,m)=>a+m.ex.length,0);}
+function totalDone(){return MODULES.reduce((a,m)=>a+modProgress(m),0);}
+function streak(){
+  let n=0; const d=new Date();
+  if(!S.days[today()]) d.setDate(d.getDate()-1);
+  while(true){const k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); if(S.days[k]){n++; d.setDate(d.getDate()-1);} else break;}
+  return n;
+}
+
+/* practice timer: counts while the tab is visible and you've touched it in the last 2 min */
+let lastAct=Date.now();
+['keydown','click','pointermove','scroll'].forEach(ev=>addEventListener(ev,()=>{lastAct=Date.now();},{passive:true}));
+setInterval(()=>{
+  if(document.visibilityState==='visible' && Date.now()-lastAct<120000){
+    const k=today(); S.mins[k]=(S.mins[k]||0)+0.25; save();
+    const el=document.getElementById('minsToday'); if(el) el.textContent=Math.floor(S.mins[k]);
+    const b=document.getElementById('minsBar'); if(b) b.style.width=Math.min(100,S.mins[k]/120*100)+'%';
+  }
+},15000);
+
+/* ============================== VIEWS ============================== */
+let current={view:'home'};
+const view=document.getElementById('view');
+
+function readStrip(m){
+  return '<span class="read" aria-hidden="true">'+m.ex.map((e,i)=>{const ok=S.done[exId(m,i)]&&S.done[exId(m,i)].ok; const b=BASES[i%4]; return ok?'<i class="'+b+'">'+b+'</i>':'<i>N</i>';}).join('')+'</span>';
+}
+function renderNav(){
+  const nav=document.getElementById('nav');
+  let h='<button class="navbtn" data-go="home" aria-current="'+(current.view==='home')+'"><span class="k">~</span><span class="t">Today</span></button>';
+  h+='<button class="navbtn" data-go="drill" aria-current="'+(current.view==='drill')+'"><span class="k">↻</span><span class="t">Daily drill</span></button>';
+  h+='<button class="navbtn" data-go="cheat" aria-current="'+(current.view==='cheat')+'"><span class="k">≡</span><span class="t">Cheat sheet</span></button>';
+  h+='<div class="navsec">Coding foundations</div>';
+  MODULES.forEach((m,i)=>{
+    if(m.sec && (i===0||MODULES[i-1].sec!==m.sec)) h+='<div class="navsec">'+m.sec+'</div>';
+    h+='<button class="navbtn" data-go="mod" data-id="'+m.id+'" aria-current="'+(current.view==='mod'&&current.id===m.id)+'"><span class="k">'+String(i+1).padStart(2,'0')+'</span><span class="t">'+m.title+'<span class="mini">'+readStrip(m)+'</span></span></button>';
+  });
+  nav.innerHTML=h;
+}
+document.getElementById('nav').addEventListener('click',e=>{
+  const b=e.target.closest('[data-go]'); if(!b) return;
+  go(b.dataset.go,b.dataset.id);
+});
+function go(v,id,tab){
+  current={view:v,id:id,tab:tab||'learn'};
+  try{history.replaceState(null,'','#'+(v==='mod'?'m-'+id:v));}catch(e){}
+  renderNav(); render(); window.scrollTo(0,0);
+}
+
+function render(){
+  if(current.view==='home') renderHome();
+  else if(current.view==='mod') renderModule();
+  else if(current.view==='drill') renderDrill();
+  else if(current.view==='cheat') renderCheat();
+}
+
+function nextModule(){return MODULES.find(m=>modProgress(m)<m.ex.length)||MODULES[0];}
+
+function renderHome(){
+  const k=today(); const mins=Math.floor(S.mins[k]||0); const done=totalDone(), tot=totalEx();
+  const nm=nextModule();
+  let h='<section class="hero"><div class="eyebrow">Shell practice for bioinformatics</div><h1>Two hours a day, one command at a time.</h1><p class="lede">Each module explains <b>when</b> to reach for a command, then has you type it. Answers are checked against what a working bioinformatician would write, with feedback on the classic mistakes. Stuck? Every module has a tutor you can ask why. Your progress stays in this browser.</p></section>';
+  h+='<div class="stats">'+
+     '<div class="stat"><div class="v"><span id="minsToday">'+mins+'</span><span style="font-size:16px;color:var(--muted)"> / 120 min</span></div><div class="l">Practised today</div><div class="bar"><div id="minsBar" style="width:'+Math.min(100,mins/120*100)+'%"></div></div></div>'+
+     '<div class="stat"><div class="v">'+streak()+'<span style="font-size:16px;color:var(--muted)"> days</span></div><div class="l">Streak (a day counts once you get one right)</div></div>'+
+     '<div class="stat"><div class="v">'+done+'<span style="font-size:16px;color:var(--muted)"> / '+tot+'</span></div><div class="l">Exercises solved</div><div class="bar"><div style="width:'+(done/tot*100)+'%"></div></div></div>'+
+     '</div>';
+  h+='<section><h2 style="font-size:22px;margin-bottom:10px">Today\'s 2-hour plan</h2><div class="plan">'+
+     '<div><div class="min">0:00 – 0:20</div><h3>Daily drill</h3><p>12 mixed exercises, weighted toward the ones you missed.</p></div>'+
+     '<div><div class="min">0:20 – 1:10</div><h3>New module</h3><p>Read the lessons, then do every exercise in <b>'+nm.title+'</b>.</p></div>'+
+     '<div><div class="min">1:10 – 1:50</div><h3>Real terminal</h3><p>Do the module\'s lab tasks on your laptop or cluster. This is where it sticks.</p></div>'+
+     '<div><div class="min">1:50 – 2:00</div><h3>Commit</h3><p><code>git commit</code> your scripts and notes. Your GitHub becomes your log.</p></div>'+
+     '</div><div class="row" style="margin-top:12px"><button class="btn primary" data-act="drill">Start the drill</button><button class="btn" data-act="next">Open '+nm.title+'</button></div></section>';
+  const card=(m,i)=>'<button class="modcard" data-mod="'+m.id+'"><span class="n">MODULE '+String(i+1).padStart(2,'0')+' · '+modProgress(m)+'/'+m.ex.length+'</span><h3>'+m.title+'</h3><p class="mono" style="font-size:12.5px">'+esc(m.blurb)+'</p>'+readStrip(m)+'</button>';
+  h+='<section><h2 style="font-size:22px;margin-bottom:10px">Coding foundations</h2><div class="modgrid">'+MODULES.map((m,i)=>m.sec?'':card(m,i)).join('')+'</div></section>';
+  h+='<section><h2 style="font-size:22px;margin-bottom:4px">Genomics workflows</h2><p class="lede" style="margin-bottom:10px">QC and trimming, RNA-seq, ChIP-seq and single-cell: the tools, the parameters, and how to read the results.</p><div class="modgrid">'+MODULES.map((m,i)=>m.sec?card(m,i):'').join('')+'</div>'+
+     '<p class="small-note" style="margin-top:10px">Each exercise is one base in the module\'s read: <b>N</b> until you solve it.</p></section>';
+  h+='<section class="offline" id="appbox"><h2 style="font-size:20px;margin-bottom:6px">App &amp; AI tutor</h2>'+
+     '<p id="installNote"></p>'+
+     '<div id="keyBox" style="margin-top:12px"><p><b>AI tutor in the installed app.</b> Outside Claude, the tutor needs your own Claude API key (from console.anthropic.com; usage is billed to that account, typically a fraction of a cent per question). The key is stored only on this device. Without a key, the tutor shows built-in explanations.</p>'+
+     '<div class="row" style="margin-top:8px"><input id="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…" aria-label="Claude API key" style="flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;padding:8px 10px">'+
+     '<button class="btn small primary" id="saveKey">Save key</button><button class="btn small" id="clearKey">Remove</button></div><p class="small-note" id="keyMsg" style="margin-top:6px"></p></div></section>';
+  h+='<section class="row"><button class="btn small" data-act="reset">Reset progress</button><span id="resetConfirm"></span></section>';
+  view.innerHTML=h;
+  view.querySelector('[data-act="drill"]').onclick=()=>go('drill');
+  view.querySelector('[data-act="next"]').onclick=()=>go('mod',nm.id);
+  view.querySelectorAll('[data-mod]').forEach(b=>b.onclick=()=>go('mod',b.dataset.mod));
+  setupAppBox();
+  view.querySelector('[data-act="reset"]').onclick=()=>{
+    document.getElementById('resetConfirm').innerHTML='<span class="small-note">Erase all progress?</span> <button class="btn small" id="yesReset">Yes, erase</button> <button class="btn small" id="noReset">Keep it</button>';
+    document.getElementById('yesReset').onclick=()=>{S={done:{},days:{},mins:{}};save();renderNav();renderHome();toast('Progress erased');};
+    document.getElementById('noReset').onclick=()=>{document.getElementById('resetConfirm').innerHTML='';};
+  };
+}
+
+function renderModule(){
+  const mi=MODULES.findIndex(m=>m.id===current.id); const m=MODULES[mi];
+  let h='<section class="hero"><div class="eyebrow">Module '+String(mi+1).padStart(2,'0')+' · '+modProgress(m)+'/'+m.ex.length+' solved</div><h1 style="font-size:clamp(28px,4vw,40px)">'+m.title+'</h1><p class="lede mono" style="font-size:14px">'+esc(m.blurb)+'</p></section>';
+  h+='<div class="tabs" role="tablist"><button class="tab" role="tab" data-tab="learn" aria-selected="'+(current.tab==='learn')+'">Learn: when to use what</button><button class="tab" role="tab" data-tab="practice" aria-selected="'+(current.tab==='practice')+'">Practice ('+m.ex.length+')</button><button class="tab" role="tab" data-tab="lab" aria-selected="'+(current.tab==='lab')+'">Real-terminal lab</button></div>';
+  h+='<div id="tabBody"></div>';
+  view.innerHTML=h;
+  view.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{current.tab=t.dataset.tab; renderModule();});
+  const body=document.getElementById('tabBody');
+  if(current.tab==='learn'){
+    body.innerHTML='<div class="lessons">'+m.lessons.map(l=>'<article class="lesson"><div><h3>'+l.h+'</h3><p class="when"><b>Use it when:</b> '+l.when+'</p>'+(l.watch?'<p class="watch"><b>Watch out:</b> '+l.watch+'</p>':'')+'</div><pre class="code">'+codeHTML(l.code)+'</pre></article>').join('')+'</div><div class="row" style="margin-top:16px"><button class="btn primary" id="toPrac">Practise these →</button></div><section class="tutor lone" aria-label="AI tutor"></section>';
+    document.getElementById('toPrac').onclick=()=>{current.tab='practice';renderModule();};
+    mountTutor(body.querySelector('.tutor'),'learn:'+m.id,()=>lessonContext(m),[
+      'Explain the difference between the commands in this module',
+      'Give me a real example from a genomics project',
+      'Quiz me with 3 short questions'
+    ],null);
+  } else if(current.tab==='lab'){
+    body.innerHTML='<div class="lab"><h3>Do these in a real terminal</h3><p class="small-note" style="margin:0 0 8px">This app checks your typing against known-good answers; it does not run bash. The lab is where you run things for real and read real error messages. Paste an error below and ask the tutor what it means.</p><ol>'+m.lab.map(x=>'<li>'+x+'</li>').join('')+'</ol></div><section class="tutor lone" aria-label="AI tutor"></section>';
+    mountTutor(body.querySelector('.tutor'),'lab:'+m.id,()=>lessonContext(m)+'\n\nLab tasks:\n'+m.lab.map(strip).join('\n'),[
+      'I got an error. What does it mean? (paste it below)',
+      'Walk me through the first lab task step by step'
+    ],null);
+  } else {
+    const items=m.ex.map((e,i)=>({m,i,e}));
+    const firstOpen=items.findIndex(x=>!(S.done[exId(x.m,x.i)]&&S.done[exId(x.m,x.i)].ok));
+    mountPractice(body,items,firstOpen<0?0:firstOpen,()=>renderModule());
+  }
+}
+
+function pickDrill(){
+  const all=[]; MODULES.forEach(m=>m.ex.forEach((e,i)=>all.push({m,i,e})));
+  const score=x=>{const r=S.done[exId(x.m,x.i)]; if(!r) return 1; if(!r.ok) return 3+(r.tries||0); return (r.miss||0)*2+0.3;};
+  // missed/unsolved-but-tried first, then reviews of solved ones, then a few unseen from started modules
+  const started=new Set(MODULES.filter(m=>m.ex.some((e,i)=>S.done[exId(m,i)])).map(m=>m.id));
+  let pool=all.filter(x=>S.done[exId(x.m,x.i)]||started.has(x.m.id));
+  if(pool.length<12) pool=all.filter(x=>MODULES.indexOf(x.m)<=Math.max(1,MODULES.indexOf(nextModule())));
+  pool=pool.map(x=>({x,w:score(x)*(0.6+Math.random())})).sort((a,b)=>b.w-a.w).slice(0,12).map(o=>o.x);
+  return pool.sort(()=>Math.random()-.5);
+}
+let drillSet=null;
+function renderDrill(){
+  if(!drillSet) drillSet=pickDrill();
+  view.innerHTML='<section class="hero"><div class="eyebrow">Daily drill · '+drillSet.length+' exercises</div><h1 style="font-size:clamp(28px,4vw,40px)">Review before anything new.</h1><p class="lede">Mixed from every module you have touched, heavier on the ones you missed or had to peek at. Aim to solve them without hints.</p></section><div id="dbody"></div><div class="row"><button class="btn small" id="newDrill">Shuffle a new set</button></div>';
+  document.getElementById('newDrill').onclick=()=>{drillSet=pickDrill();renderDrill();};
+  mountPractice(document.getElementById('dbody'),drillSet,0,null,true);
+}
+
+function renderCheat(){
+  let h='<section class="hero"><div class="eyebrow">Reference</div><h1 style="font-size:clamp(28px,4vw,40px)">Which one, when?</h1><p class="lede">The decisions beginners trip over, on one page.</p></section><div class="cheat">';
+  const rows=[
+    ['Where am I?','pwd','getwd()  (R)','Read the prompt: $ = shell, > = R'],
+    ['Go up a folder','cd ..','setwd("..")  (R)','cd ../.. = up two, cd - = back'],
+    ['Set a variable','NAME=value','x <- 5  (R)','No spaces around = in bash'],
+    ['Read a variable','"$NAME"  or  "${NAME}_R1"','x','Braces when text follows the name'],
+    ['Run a command inside another','$(command)','','${VAR} reads; $(cmd) runs; $((1+2)) maths'],
+    ['Literal text','\'$NOT_EXPANDED\'','','awk programs, regex patterns'],
+    ['Look at a .gz','zcat f.gz | head','','head on .gz = binary garbage'],
+    ['Count FASTQ reads','echo $(( $(zcat f.fastq.gz | wc -l) / 4 ))','','4 lines per read'],
+    ['Count FASTA seqs','grep -c "^>" f.fa','','Quote the >'],
+    ['Count BAM reads','samtools view -c -F 4 f.bam','','-F removes, -f keeps'],
+    ['Save / append / errors','>   >>   2>   &>','','> overwrites'],
+    ['Run a script','./s.sh  or  bash s.sh','Rscript s.R / python3 s.py','./ needs chmod +x'],
+    ['Load settings into this shell','source config.sh','','bash config.sh forgets them'],
+    ['Tool "not found" on HPC','module load tool/ver','','module avail / spider to find it'],
+    ['Heavy work on HPC','sbatch job.sbatch','srun --pty bash (interactive)','Never on the login node'],
+    ['Threads in a job','--cpus-per-task=8','tool -t $SLURM_CPUS_PER_TASK','GPU only for GPU tools'],
+    ['Save code history','git add → commit → push','','Never commit data']
+  ];
+  h+='<div><h2>Decisions</h2><div class="tablewrap"><table><thead><tr><th>You want to…</th><th>Shell</th><th>Other</th><th>Remember</th></tr></thead><tbody>'+rows.map(r=>'<tr><td>'+r[0]+'</td><td class="mono">'+esc(r[1])+'</td><td class="mono">'+esc(r[2])+'</td><td>'+esc(r[3])+'</td></tr>').join('')+'</tbody></table></div></div>';
+  h+='<div><h2>SLURM option format</h2><pre class="code">'+codeHTML('#!/bin/bash\n#SBATCH --job-name=NAME          # long option: two dashes + =\n#SBATCH --time=D-HH:MM:SS        # e.g. 2-06:00:00 or 04:30:00\n#SBATCH --cpus-per-task=8        # short form: -c 8\n#SBATCH --mem=32G\n#SBATCH --partition=NAME         # queue (cluster-specific)\n#SBATCH --gres=gpu:1             # only for GPU tools\n#SBATCH --array=1-24             # $SLURM_ARRAY_TASK_ID\n#SBATCH --output=logs/%x_%j.out  # %x name, %j job id\n\nset -euo pipefail\nmodule purge\nmodule load tool/version')+'</pre></div>';
+  h+='<div><h2>Project layout</h2><pre class="code">'+codeHTML('project/\n  .gitignore        # data/ *.bam *.fastq.gz logs/\n  config.sh         # REF=..., THREADS=...  (source it)\n  bin/run_pipeline.sh   # wrapper: one command for everything\n  scripts/01_qc.sh\n  scripts/02_align.sbatch\n  scripts/03_counts.R\n  data/   results/   logs/')+'</pre></div>';
+  h+='</div>';
+  view.innerHTML=h;
+}
+
+/* ============================== AI TUTOR ============================== */
+// Uses the viewer's Claude account when opened inside Claude; offline or in a saved copy it falls back to built-in explanations.
+const samplerP = (window.claude && typeof window.claude.use==='function') ? window.claude.use('sample').catch(()=>null) : Promise.resolve(null);
+const KEYSTORE='bench2bash-apikey';
+function getKey(){try{return localStorage.getItem(KEYSTORE)||'';}catch(e){return '';}}
+function setKey(k){try{k?localStorage.setItem(KEYSTORE,k):localStorage.removeItem(KEYSTORE);}catch(e){}}
+// Direct call to the Claude API with the user's own key (installed-app mode)
+async function apiSample(turns,{signal}){
+  const system=turns[0].content; const msgs=[];
+  turns.slice(1).forEach(t=>{const last=msgs[msgs.length-1]; if(last&&last.role===t.role) last.content+='\n\n'+t.content; else msgs.push({role:t.role,content:t.content});});
+  while(msgs.length&&msgs[0].role!=='user') msgs.shift();
+  let r;
+  try{
+    r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',signal,headers:{'content-type':'application/json','x-api-key':getKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-5-5',max_tokens:1200,system,messages:msgs})});
+  }catch(e){ throw {code: e&&e.name==='AbortError'?'cancelled':'upstream_error'}; }
+  if(!r.ok){ throw {code: r.status===401||r.status===403?'bad_key':r.status===429?'rate_limited':r.status===400?'bad_request':'upstream_error'}; }
+  const j=await r.json();
+  const text=(j.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+  if(!text) throw {code:'empty_completion'};
+  return {text,truncated:j.stop_reason==='max_tokens'};
+}
+function tutorMode(sample){ if(!navigator.onLine||tutorBlocked) return 'off'; if(sample) return 'claude'; if(getKey()) return 'api'; return 'off'; }
+let tutorBlocked=false;
+const ATT={}, THIST={};
+function strip(h){const d=document.createElement('div'); d.innerHTML=String(h||''); return d.textContent;}
+function logAttempt(id,v){(ATT[id]=ATT[id]||[]).push(String(v).slice(0,3000)); if(ATT[id].length>4) ATT[id].shift();}
+const TUTOR_RULES='You are a patient, encouraging tutor inside "Bench to Bash", a practice app for a bioinformatics beginner. The student has an MSc in bioinformatics but little hands-on coding practice. Explain in plain language, short (under about 180 words unless they ask for more). Use small code blocks with triple backticks. When they ask why an answer is wrong, point to the exact characters or flags that differ and say what each would do in a real terminal. The app checks answers by pattern matching, so it can reject commands that would actually work: if their attempt would work in a real terminal, say so clearly, then explain the more standard form. Prefer bash, SLURM, R (Seurat, DESeq2) and Python (Scanpy) idioms used in genomics labs. Never invent tool flags; if unsure, say to check the tool\'s --help.';
+function practiceContext(it,host){
+  const e=it.e, id=exId(it.m,it.i);
+  const ans=e.t==='mcq'?strip(e.opts[e.a]):e.ans;
+  const fb=host.querySelector('#fb'), ck=host.querySelector('#checks');
+  let c='Module: '+it.m.title+'\nExercise type: '+({cmd:'type one command',mcq:'multiple choice',script:'write a short script'}[e.t])+'\nPrompt symbol: '+(e.ps||'$')+'\nQuestion: '+strip(e.q);
+  if(e.ctx) c+='\nContext shown: '+e.ctx;
+  if(e.t==='mcq') c+='\nOptions: '+e.opts.map((o,k)=>(k+1)+') '+strip(o)).join(' | ');
+  c+='\nModel answer: '+ans+'\nApp\'s explanation: '+strip(e.why||'');
+  const a=ATT[id]||[];
+  c+='\nStudent attempts, oldest first:\n'+(a.length?a.map((x,k)=>'['+(k+1)+'] '+x).join('\n'):'(none yet)');
+  if(fb&&fb.textContent.trim()) c+='\nFeedback the app showed: '+fb.textContent.trim();
+  if(ck&&!ck.hidden) c+='\nChecklist: '+[...ck.querySelectorAll('li')].map(li=>(li.classList.contains('pass')?'PASS ':'MISSING ')+li.textContent).join('; ');
+  return c;
+}
+function lessonContext(m){
+  return 'Module: '+m.title+' ('+m.blurb+')\nLessons in this module:\n'+m.lessons.map(l=>'- '+l.h+': '+strip(l.when)).join('\n').slice(0,6000);
+}
+function offlineExplain(it){
+  const e=it.e, id=exId(it.m,it.i), a=ATT[id]||[];
+  let h='<p><b>Built-in explanation</b> (the AI tutor is off: you are offline, or no API key is set).</p>';
+  if(e.t==='cmd'&&a.length){
+    const mine=norm(a[a.length-1]).split(' '), want=norm(e.ans).split(' ');
+    const missing=want.filter(t=>!mine.includes(t)), extra=mine.filter(t=>!want.includes(t));
+    if(missing.length) h+='<p>In the model answer but not yours: '+missing.map(t=>'<code>'+esc(t)+'</code>').join(' ')+'</p>';
+    if(extra.length) h+='<p>In yours but not the model answer: '+extra.map(t=>'<code>'+esc(t)+'</code>').join(' ')+'</p>';
+    const trap=(e.traps||[]).find(t=>t[0].test(norm(a[a.length-1])));
+    if(trap) h+='<p>'+trap[1]+'</p>';
+  }
+  if(e.hint) h+='<p><b>Hint:</b> '+e.hint+'</p>';
+  if(e.why) h+='<p><b>Why:</b> '+e.why+'</p>';
+  return h;
+}
+function mdHTML(t){
+  const parts=String(t).split(/```[a-zA-Z]*\n?/);
+  return parts.map((p,i)=>{
+    if(i%2) return '<pre class="code">'+esc(p.replace(/\n$/,''))+'</pre>';
+    return esc(p).split(/\n{2,}/).map(par=>{
+      par=par.replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>');
+      const lines=par.split('\n');
+      if(lines.every(l=>/^\s*([-*]|\d+\.)\s/.test(l)||!l.trim())) return '<ul>'+lines.filter(l=>l.trim()).map(l=>'<li>'+l.replace(/^\s*([-*]|\d+\.)\s/,'')+'</li>').join('')+'</ul>';
+      return par.trim()?'<p>'+lines.join('<br>')+'</p>':'';
+    }).join('');
+  }).join('');
+}
+const ERR_COPY={bad_key:'Your API key was not accepted. Check it in the "AI tutor" settings on the Today page.',bad_request:'The request was rejected. Try a shorter question.',not_granted:'The tutor is off for this visit because Claude access was not allowed. Reload the page to be asked again.',sampling_disabled:'Claude is not available on this account, so the tutor is off.',rate_limited:'Too many questions in a short time. Wait a minute and ask again.',session_expired:'Your Claude session expired. Sign in again, then ask.',refused:'The tutor could not answer that. Try rephrasing the question.',empty_completion:'No answer came back. Try a shorter question.',prompt_too_large:'That was too long. Paste a shorter piece.'};
+function mountTutor(el,key,ctxFn,quick,offlineFn){
+  if(!el) return;
+  const hist=THIST[key]=THIST[key]||[];
+  el.innerHTML='<div class="tutor-head"><span class="tutor-name">Ask the tutor</span><span class="tutor-status small-note">checking…</span></div>'+
+    '<div class="tlog"></div>'+
+    '<div class="quick">'+quick.map(q=>'<button class="chip" type="button">'+esc(q)+'</button>').join('')+'</div>'+
+    '<div class="tin"><textarea rows="2" id="tq-'+key.replace(/\W/g,'_')+'" placeholder="Ask anything about this: why, when, what a flag does, paste an error…" aria-label="Question for the tutor"></textarea><div class="row"><button class="btn primary small" data-ask>Ask</button><button class="btn small" data-stop hidden>Stop</button></div></div>';
+  const log=el.querySelector('.tlog'), ta=el.querySelector('textarea'), askB=el.querySelector('[data-ask]'), stopB=el.querySelector('[data-stop]'), st=el.querySelector('.tutor-status');
+  const drawHist=()=>{log.innerHTML=hist.map(t=>t.role==='user'?'<div class="msg you"><span class="who">You</span><div>'+esc(t.content)+'</div></div>':'<div class="msg ai"><span class="who">Tutor</span><div>'+mdHTML(t.content)+'</div></div>').join('');};
+  drawHist();
+  let sample=null, ctl=null;
+  const label=()=>{const m=tutorMode(sample); st.textContent=m==='claude'?'AI · uses your Claude account':m==='api'?'AI · uses your API key':(navigator.onLine&&!getKey()&&!sample?'Built-in explanations · add an API key on Today to turn on AI':'Offline · built-in explanations');};
+  samplerP.then(s=>{sample=s; label();});
+  addEventListener('online',label); addEventListener('offline',label);
+  const ask=async(q)=>{
+    q=q.trim(); if(!q) return;
+    const mode=tutorMode(sample);
+    if(mode==='off'){
+      const box=document.createElement('div'); box.className='msg ai';
+      box.innerHTML='<span class="who">Tutor (offline)</span><div>'+(offlineFn?offlineFn():'<p>The AI tutor needs an internet connection inside Claude. Re-read the "Use it when" and "Watch out" notes above; they cover the most common confusions.</p>')+'</div>';
+      log.appendChild(box); return;
+    }
+    hist.push({role:'user',content:q}); ta.value=''; drawHist();
+    const out=document.createElement('div'); out.className='msg ai'; out.innerHTML='<span class="who">Tutor</span><div class="small-note">Thinking…</div>'; log.appendChild(out);
+    const body=out.querySelector('div');
+    ctl=new AbortController(); askB.disabled=true; stopB.hidden=false;
+    const turns=[{role:'user',content:TUTOR_RULES+'\n\n--- Current context ---\n'+ctxFn()},...hist.slice(-8)];
+    try{
+      const {text,truncated}=mode==='claude'
+        ? await sample(turns,{cache:false,modelTier:'default',signal:ctl.signal,onText:({text})=>{body.innerHTML=mdHTML(text);}})
+        : await apiSample(turns,{signal:ctl.signal});
+      body.innerHTML=mdHTML(text)+(truncated?'<p class="small-note">Answer was cut short. Ask a narrower question.</p>':'');
+      hist.push({role:'assistant',content:text});
+    }catch(err){
+      const code=err&&err.code;
+      if(code==='cancelled'){ if(err.text){body.innerHTML=mdHTML(err.text); hist.push({role:'assistant',content:err.text});} else {out.remove(); hist.pop();} }
+      else{
+        if(err&&err.text) body.innerHTML=mdHTML(err.text); else body.innerHTML='';
+        body.insertAdjacentHTML('beforeend','<p class="small-note">'+(ERR_COPY[code]||'Connection problem. Check your internet and ask again.')+'</p>');
+        if(['not_granted','sampling_disabled','not_declared','capability_disabled','capability_removed'].includes(code)){tutorBlocked=true; label();}
+        if(!err||!err.text) hist.pop();
+      }
+    }finally{askB.disabled=false; stopB.hidden=true; ctl=null;}
+  };
+  askB.onclick=()=>ask(ta.value);
+  stopB.onclick=()=>ctl&&ctl.abort();
+  ta.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&(ev.metaKey||ev.ctrlKey)){ev.preventDefault();ask(ta.value);}});
+  el.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{
+    if(/paste it below/.test(c.textContent)){ta.focus(); ta.placeholder='Paste the error message here, then press Ask'; return;}
+    ask(c.textContent);
+  });
+}
+
+/* ============================== PRACTICE ENGINE ============================== */
+function mountPractice(host,items,start,onChange,isDrill){
+  let idx=start; let tries=0;
+  function draw(){
+    const it=items[idx]; const id=exId(it.m,it.i); const e=it.e; const r=S.done[id];
+    tries=0;
+    const strip=items.map((x,j)=>{const ok=S.done[exId(x.m,x.i)]&&S.done[exId(x.m,x.i)].ok; const b=BASES[j%4]; return '<button class="'+b+(ok?' done':'')+(j===idx?' cur':'')+'" data-j="'+j+'" aria-label="Exercise '+(j+1)+(ok?' solved':'')+'">'+(ok?b:'N')+'</button>';}).join('');
+    const kind={cmd:'Type the command',mcq:'Choose one',script:'Write the script'}[e.t];
+    let h='<div class="prac"><div class="prac-head"><div class="strip">'+strip+'</div><span class="small-note">'+(isDrill?esc(it.m.title)+' · ':'')+(idx+1)+' of '+items.length+(r&&r.ok?' · solved before':'')+'</span></div><div class="prac-body">';
+    h+='<div class="kind">'+kind+'</div><p class="q">'+e.q+'</p>';
+    if(e.t==='cmd'){
+      h+='<div class="term">'+(e.ctx?'<div class="ctx">'+esc(e.ctx)+'</div>':'')+'<div class="line"><span class="ps">'+esc(e.ps||'$')+'</span><input id="cmdIn" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Your command" placeholder="type here, press Enter"></div></div>';
+    } else if(e.t==='mcq'){
+      h+='<div class="opts">'+e.opts.map((o,k)=>'<button class="opt" data-k="'+k+'">'+o+'</button>').join('')+'</div>';
+    } else {
+      h+='<textarea class="script" id="scrIn" spellcheck="false" autocapitalize="off" aria-label="Your script">'+esc(e.start||'')+'</textarea><ul class="checks" id="checks" hidden></ul>';
+    }
+    h+='<div id="fb"></div><div class="prac-foot"><div class="row">'+(e.t!=='mcq'?'<button class="btn primary" id="check">Check</button><button class="btn" id="hint">Hint</button>':'')+'<button class="btn" id="show">Show answer</button></div><div class="row"><button class="btn" id="prev" '+(idx===0?'disabled':'')+'>← Prev</button><button class="btn" id="next">'+(idx===items.length-1?'Finish':'Next →')+'</button></div></div>';
+    h+='</div><section class="tutor" aria-label="AI tutor"></section></div>';
+    host.innerHTML=h;
+    mountTutor(host.querySelector('.tutor'), id, ()=>practiceContext(it,host), [
+      'Why is my answer not accepted?',
+      'Break the answer down part by part',
+      'When would I use this in a real lab project?'
+    ], ()=>offlineExplain(it));
+    const fb=host.querySelector('#fb');
+    host.querySelectorAll('.strip button').forEach(b=>b.onclick=()=>{idx=+b.dataset.j;draw();});
+    host.querySelector('#prev').onclick=()=>{if(idx>0){idx--;draw();}};
+    host.querySelector('#next').onclick=()=>{
+      if(idx<items.length-1){idx++;draw();}
+      else { const solved=items.filter(x=>S.done[exId(x.m,x.i)]&&S.done[exId(x.m,x.i)].ok).length; fb.innerHTML='<div class="fb ok"><p><b>Set finished: '+solved+' of '+items.length+' solved.</b> '+(isDrill?'Shuffle a new set, or move on to your module.':'Now open the Real-terminal lab tab and try it for real.')+'</p></div>'; }
+    };
+    const showAns=()=>{
+      markPeek(id);
+      const a=e.t==='mcq'?e.opts[e.a]:e.ans;
+      fb.innerHTML='<div class="fb show"><p><b>Answer</b></p>'+(e.t==='mcq'?'<p>'+a+'</p>':'<pre class="code">'+codeHTML(a)+'</pre>')+(e.why?'<p>'+e.why+'</p>':'')+'<p class="small-note">Now type it yourself from memory. It counts once you get it right.</p></div>';
+      if(e.t==='mcq') host.querySelectorAll('.opt').forEach((b,k)=>{if(k===e.a)b.classList.add('right');});
+    };
+    host.querySelector('#show').onclick=showAns;
+
+    if(e.t==='cmd'){
+      const inp=host.querySelector('#cmdIn'); setTimeout(()=>inp.focus({preventScroll:true}),0);
+      const check=()=>{
+        const v=norm(inp.value); if(!v) return;
+        tries++; markTry(id);
+        logAttempt(id,inp.value);
+        if(e.acc.some(a=>typeof a==='function'?a(v):a.test(v))){ markOk(id); good(e.why, v!==e.ans?e.ans:null); return; }
+        const trap=(e.traps||[]).find(t=>t[0].test(v));
+        fb.innerHTML='<div class="fb no"><p><b>Not yet.</b> '+(trap?trap[1]:'Check spelling, spaces, and the file names in the question.')+'</p>'+(tries>=2&&!trap?'<p class="small-note">Stuck? Try the hint, or show the answer and retype it.</p>':'')+'</div>';
+      };
+      inp.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.preventDefault();check();}});
+      host.querySelector('#check').onclick=check;
+      host.querySelector('#hint').onclick=()=>{fb.innerHTML='<div class="fb hint"><p><b>Hint:</b> '+e.hint+'</p></div>';inp.focus();};
+    } else if(e.t==='mcq'){
+      host.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
+        const k=+b.dataset.k; markTry(id); logAttempt(id,'chose: '+strip(e.opts[k]));
+        if(k===e.a){ b.classList.add('right'); markOk(id); good(e.why); }
+        else { b.classList.add('wrong'); fb.innerHTML='<div class="fb no"><p><b>Not that one.</b> Try another.</p></div>'; }
+      });
+    } else {
+      const ta=host.querySelector('#scrIn'); const ul=host.querySelector('#checks');
+      ta.addEventListener('keydown',ev=>{ if(ev.key==='Tab'){ev.preventDefault(); const s=ta.selectionStart; ta.setRangeText('  ',s,ta.selectionEnd,'end');} });
+      host.querySelector('#check').onclick=()=>{
+        const v=ta.value; markTry(id); logAttempt(id,v);
+        const res=e.checks.map(c=>({ok:typeof c[0]==='function'?c[0](v):c[0].test(v),msg:c[1]}));
+        ul.hidden=false; ul.innerHTML=res.map(r=>'<li class="'+(r.ok?'pass':'')+'">'+esc(r.msg)+'</li>').join('');
+        const n=res.filter(r=>r.ok).length;
+        if(n===res.length){ markOk(id); good(e.why); }
+        else fb.innerHTML='<div class="fb no"><p><b>'+n+' of '+res.length+' checks pass.</b> Fix the ✗ lines and check again.</p></div>';
+      };
+      host.querySelector('#hint').onclick=()=>{ul.hidden=false; ul.innerHTML=e.checks.map(c=>'<li>'+esc(c[1])+'</li>').join(''); fb.innerHTML='<div class="fb hint"><p><b>Hint:</b> your script needs everything in the list above.</p></div>';};
+    }
+    function good(why,alt){
+      fb.innerHTML='<div class="fb ok"><p><b>Correct.</b> '+(why||'')+'</p>'+(alt?'<p class="small-note">The most common way to write it: <code>'+esc(alt)+'</code></p>':'')+'</div>';
+      host.querySelectorAll('.strip button')[idx].classList.add('done');
+      host.querySelectorAll('.strip button')[idx].textContent=BASES[idx%4];
+      const nx=host.querySelector('#next'); nx.classList.add('primary'); nx.focus({preventScroll:true});
+    }
+  }
+  draw();
+}
+
+function setupAppBox(){
+  const inst=document.getElementById('installNote'); if(!inst) return;
+  const standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+  inst.innerHTML=standalone?'Installed. Lessons, exercises, drill and cheat sheet all work offline; progress stays on this device.'
+    :'Install it: on iPhone/iPad open this page in <b>Safari</b> → Share → <b>Add to Home Screen</b>. On Android open it in <b>Chrome</b> → menu → <b>Install app</b>. After the first visit it works offline.';
+  const kb=document.getElementById('keyBox'), ki=document.getElementById('apiKey'), msg=document.getElementById('keyMsg');
+  samplerP.then(s=>{ if(s){ kb.innerHTML='<p>You are inside Claude, so the tutor uses your Claude account. No key needed here.</p>'; } });
+  if(getKey()){ ki.placeholder='Key saved on this device'; msg.textContent='A key is saved. The tutor will use it when you are online.'; }
+  document.getElementById('saveKey').onclick=()=>{ const k=ki.value.trim(); if(!/^sk-ant-/.test(k)){ msg.textContent='That does not look like a Claude API key (they start with sk-ant-).'; return; } setKey(k); ki.value=''; ki.placeholder='Key saved on this device'; msg.textContent='Saved. Ask the tutor anything in any module.'; };
+  document.getElementById('clearKey').onclick=()=>{ setKey(''); ki.value=''; ki.placeholder='sk-ant-…'; msg.textContent='Key removed from this device.'; };
+}
+let tt;function toast(m){const t=document.getElementById('toast');t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,2200);}
+
+/* offline support when installed */
+if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){ addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
+/* boot */
+(function(){
+  const h=(location.hash||'').slice(1);
+  if(h.startsWith('m-')&&MODULES.some(m=>m.id===h.slice(2))) current={view:'mod',id:h.slice(2),tab:'learn'};
+  else if(['drill','cheat','home'].includes(h)) current={view:h};
+  renderNav(); render();
+})();
+addEventListener('hashchange',()=>{
+  const h=(location.hash||'').slice(1);
+  if(h.startsWith('m-')&&MODULES.some(m=>m.id===h.slice(2))) go('mod',h.slice(2));
+  else if(['drill','cheat','home'].includes(h)) go(h);
+});
+</script>
+
+</body>
+</html>
