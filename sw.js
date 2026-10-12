@@ -1,5 +1,5 @@
 // Bench to Bash offline cache. Bump VERSION when you change the app so phones pick up the update.
-const VERSION = 'b2b-v2';
+const VERSION = 'b2b-v5';
 const SHELL = ['./', './index.html', './manifest.webmanifest',
   './icon-192.png', './icon-512.png', './maskable-512.png', './apple-touch-icon.png'];
 

@@ -134,6 +134,42 @@ pre.code .p{color:var(--term-prompt)}
 :root[data-theme="dark"] .strip button.done{color:#0D131A}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .strip button.done{color:#0D131A}}
 .strip button.cur{outline:2px solid var(--ink);outline-offset:1px}
+.prog{display:flex;align-items:center;gap:8px;width:100%}
+.pbar{flex:1;height:5px;background:var(--sunk);border-radius:5px;overflow:hidden;min-width:40px}
+.pbar>span{display:block;height:100%;background:var(--accent);border-radius:5px}
+.prog.full .pbar>span{background:var(--ok)}
+.pnum{font-family:var(--f-mono);font-size:11.5px;color:var(--muted);white-space:nowrap}
+.prog.full .pnum{color:var(--ok);font-weight:600}
+.tick{color:var(--ok);font-weight:700}
+.modcard.complete{border-color:var(--ok)}
+.pill{display:inline-flex;align-items:center;border-radius:999px;padding:3px 10px;font-size:13px;font-weight:700;background:var(--surface);border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.pill.ok{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+.modstat{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.donebanner{background:var(--ok-soft);border:1px solid var(--ok);border-radius:var(--r);padding:12px 16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.labl{list-style:none;padding-left:0!important;display:flex;flex-direction:column;gap:8px}
+.labl label{display:flex;gap:10px;align-items:flex-start;cursor:pointer}
+.labl input{width:20px;height:20px;margin-top:2px;flex-shrink:0;accent-color:var(--ok)}
+.labl input:checked+span{color:var(--muted);text-decoration:line-through}
+.strip button{width:30px;height:30px}
+.pinbtn{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:4px 11px;font-size:13px;font-weight:700;cursor:pointer}
+.pinbtn:hover{border-color:var(--G);color:var(--G)}
+.pinbtn.on{background:var(--warn-soft);border-color:var(--G);color:var(--G)}
+.pinbtn.demo{cursor:default;padding:2px 9px;vertical-align:middle}
+.pinico{flex-shrink:0}
+.navbtn .k .pinico{vertical-align:middle}
+.cnt{display:inline-block;min-width:20px;padding:0 6px;border-radius:999px;background:var(--warn-soft);color:var(--G);font-size:12px;font-weight:700;text-align:center;margin-left:4px}
+.quizbar{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center;background:var(--surface);border:1px solid var(--G);border-radius:var(--r);padding:14px 16px}
+.pingroup h2{font-size:18px;margin-bottom:8px}
+.pinlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.pinlist li{display:flex;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px}
+.pinopen{flex:1;min-width:0;text-align:left;background:none;border:0;padding:0;cursor:pointer;display:flex;flex-direction:column;gap:3px}
+.pinopen:hover .pinq{color:var(--accent)}
+.pinq{font-size:15px}
+.pinmeta{font-size:12.5px;color:var(--muted)}
+.okt{color:var(--ok)}
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:var(--r);padding:18px}
+.empty p{margin:0}.empty p+p{margin-top:6px}
+
 .prac-body{padding:18px;display:flex;flex-direction:column;gap:14px}
 .kind{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:700}
 .q{font-size:18px;margin:0;max-width:65ch}
@@ -626,7 +662,7 @@ function exId(m,i){return m.id+':'+i;}
 
 /* ============================== STATE ============================== */
 const KEY='bench2bash-v1';
-let S={done:{},days:{},mins:{}};
+let S={done:{},days:{},mins:{},lab:{},pins:{}};
 try{const raw=localStorage.getItem(KEY); if(raw) S=Object.assign(S,JSON.parse(raw));}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
 function rec(id){return S.done[id]||(S.done[id]={ok:false,tries:0,peek:false,miss:0});}
@@ -655,22 +691,34 @@ setInterval(()=>{
   }
 },15000);
 
+/* ============================== PINS ============================== */
+const PIN_SVG='<svg class="pinico" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M15 3l6 6-3 1-4 4 1 5-2 2-4-4-5 5-1-1 5-5-4-4 2-2 5 1 4-4z" fill="currentColor"/></svg>';
+function isPinned(id){return !!(S.pins&&S.pins[id]);}
+function togglePin(id){S.pins=S.pins||{}; if(S.pins[id]) delete S.pins[id]; else S.pins[id]=Date.now(); save(); renderNav(); return isPinned(id);}
+function pinnedItems(){
+  const out=[]; MODULES.forEach(m=>m.ex.forEach((e,i)=>{const id=exId(m,i); if(isPinned(id)) out.push({m,i,e,at:S.pins[id]});}));
+  return out;
+}
+function pinCount(){return pinnedItems().length;}
+
 /* ============================== VIEWS ============================== */
 let current={view:'home'};
 const view=document.getElementById('view');
 
-function readStrip(m){
-  return '<span class="read" aria-hidden="true">'+m.ex.map((e,i)=>{const ok=S.done[exId(m,i)]&&S.done[exId(m,i)].ok; const b=BASES[i%4]; return ok?'<i class="'+b+'">'+b+'</i>':'<i>N</i>';}).join('')+'</span>';
-}
+function labDone(m){const a=(S.lab&&S.lab[m.id])||[]; return m.lab.filter((x,i)=>a[i]).length;}
+function modComplete(m){return modProgress(m)===m.ex.length;}
+function readStrip(m){const d=modProgress(m),n=m.ex.length; return '<span class="prog'+(d===n?' full':'')+'"><span class="pbar"><span style="width:'+(d/n*100)+'%"></span></span><span class="pnum">'+(d===n?'✓ Done':d+'/'+n)+'</span></span>';}
 function renderNav(){
   const nav=document.getElementById('nav');
   let h='<button class="navbtn" data-go="home" aria-current="'+(current.view==='home')+'"><span class="k">~</span><span class="t">Today</span></button>';
   h+='<button class="navbtn" data-go="drill" aria-current="'+(current.view==='drill')+'"><span class="k">↻</span><span class="t">Daily drill</span></button>';
+  const pc=pinCount();
+  h+='<button class="navbtn" data-go="pins" aria-current="'+(current.view==='pins')+'"><span class="k">'+PIN_SVG+'</span><span class="t">Pinned'+(pc?' <span class="cnt">'+pc+'</span>':'')+'</span></button>';
   h+='<button class="navbtn" data-go="cheat" aria-current="'+(current.view==='cheat')+'"><span class="k">≡</span><span class="t">Cheat sheet</span></button>';
   h+='<div class="navsec">Coding foundations</div>';
   MODULES.forEach((m,i)=>{
     if(m.sec && (i===0||MODULES[i-1].sec!==m.sec)) h+='<div class="navsec">'+m.sec+'</div>';
-    h+='<button class="navbtn" data-go="mod" data-id="'+m.id+'" aria-current="'+(current.view==='mod'&&current.id===m.id)+'"><span class="k">'+String(i+1).padStart(2,'0')+'</span><span class="t">'+m.title+'<span class="mini">'+readStrip(m)+'</span></span></button>';
+    h+='<button class="navbtn" data-go="mod" data-id="'+m.id+'" aria-current="'+(current.view==='mod'&&current.id===m.id)+'"><span class="k">'+String(i+1).padStart(2,'0')+'</span><span class="t">'+m.title+(modComplete(m)?' <span class="tick" aria-label="complete">✓</span>':'')+'<span class="mini">'+readStrip(m)+'</span></span></button>';
   });
   nav.innerHTML=h;
 }
@@ -688,6 +736,7 @@ function render(){
   if(current.view==='home') renderHome();
   else if(current.view==='mod') renderModule();
   else if(current.view==='drill') renderDrill();
+  else if(current.view==='pins') renderPins();
   else if(current.view==='cheat') renderCheat();
 }
 
@@ -707,11 +756,11 @@ function renderHome(){
      '<div><div class="min">0:20 – 1:10</div><h3>New module</h3><p>Read the lessons, then do every exercise in <b>'+nm.title+'</b>.</p></div>'+
      '<div><div class="min">1:10 – 1:50</div><h3>Real terminal</h3><p>Do the module\'s lab tasks on your laptop or cluster. This is where it sticks.</p></div>'+
      '<div><div class="min">1:50 – 2:00</div><h3>Commit</h3><p><code>git commit</code> your scripts and notes. Your GitHub becomes your log.</p></div>'+
-     '</div><div class="row" style="margin-top:12px"><button class="btn primary" data-act="drill">Start the drill</button><button class="btn" data-act="next">Open '+nm.title+'</button></div></section>';
-  const card=(m,i)=>'<button class="modcard" data-mod="'+m.id+'"><span class="n">MODULE '+String(i+1).padStart(2,'0')+' · '+modProgress(m)+'/'+m.ex.length+'</span><h3>'+m.title+'</h3><p class="mono" style="font-size:12.5px">'+esc(m.blurb)+'</p>'+readStrip(m)+'</button>';
+     '</div><div class="row" style="margin-top:12px"><button class="btn primary" data-act="drill">Start the drill</button><button class="btn" data-act="next">Open '+nm.title+'</button>'+(pinCount()?'<button class="btn" data-act="pins">'+PIN_SVG+' Pinned quiz ('+pinCount()+')</button>':'')+'</div></section>';
+  const card=(m,i)=>'<button class="modcard'+(modComplete(m)?' complete':'')+'" data-mod="'+m.id+'"><span class="n">MODULE '+String(i+1).padStart(2,'0')+' · '+modProgress(m)+'/'+m.ex.length+'</span><h3>'+m.title+'</h3><p class="mono" style="font-size:12.5px">'+esc(m.blurb)+'</p>'+readStrip(m)+'</button>';
   h+='<section><h2 style="font-size:22px;margin-bottom:10px">Coding foundations</h2><div class="modgrid">'+MODULES.map((m,i)=>m.sec?'':card(m,i)).join('')+'</div></section>';
   h+='<section><h2 style="font-size:22px;margin-bottom:4px">Genomics workflows</h2><p class="lede" style="margin-bottom:10px">QC and trimming, RNA-seq, ChIP-seq and single-cell: the tools, the parameters, and how to read the results.</p><div class="modgrid">'+MODULES.map((m,i)=>m.sec?card(m,i):'').join('')+'</div>'+
-     '<p class="small-note" style="margin-top:10px">Each exercise is one base in the module\'s read: <b>N</b> until you solve it.</p></section>';
+     '<p class="small-note" style="margin-top:10px">A module is done when every exercise is solved. Lab tasks are ticked separately inside each module.</p></section>';
   h+='<section class="offline" id="appbox"><h2 style="font-size:20px;margin-bottom:6px">App &amp; AI tutor</h2>'+
      '<p id="installNote"></p>'+
      '<div id="keyBox" style="margin-top:12px"><p><b>AI tutor in the installed app.</b> Outside Claude, the tutor needs your own Claude API key (from console.anthropic.com; usage is billed to that account, typically a fraction of a cent per question). The key is stored only on this device. Without a key, the tutor shows built-in explanations.</p>'+
@@ -721,22 +770,26 @@ function renderHome(){
   view.innerHTML=h;
   view.querySelector('[data-act="drill"]').onclick=()=>go('drill');
   view.querySelector('[data-act="next"]').onclick=()=>go('mod',nm.id);
+  const pb=view.querySelector('[data-act="pins"]'); if(pb) pb.onclick=()=>{pinSession=null; go('pins');};
   view.querySelectorAll('[data-mod]').forEach(b=>b.onclick=()=>go('mod',b.dataset.mod));
   setupAppBox();
   view.querySelector('[data-act="reset"]').onclick=()=>{
     document.getElementById('resetConfirm').innerHTML='<span class="small-note">Erase all progress?</span> <button class="btn small" id="yesReset">Yes, erase</button> <button class="btn small" id="noReset">Keep it</button>';
-    document.getElementById('yesReset').onclick=()=>{S={done:{},days:{},mins:{}};save();renderNav();renderHome();toast('Progress erased');};
+    document.getElementById('yesReset').onclick=()=>{S={done:{},days:{},mins:{},lab:{},pins:{}};save();renderNav();renderHome();toast('Progress erased');};
     document.getElementById('noReset').onclick=()=>{document.getElementById('resetConfirm').innerHTML='';};
   };
 }
 
 function renderModule(){
   const mi=MODULES.findIndex(m=>m.id===current.id); const m=MODULES[mi];
-  let h='<section class="hero"><div class="eyebrow">Module '+String(mi+1).padStart(2,'0')+' · '+modProgress(m)+'/'+m.ex.length+' solved</div><h1 style="font-size:clamp(28px,4vw,40px)">'+m.title+'</h1><p class="lede mono" style="font-size:14px">'+esc(m.blurb)+'</p></section>';
-  h+='<div class="tabs" role="tablist"><button class="tab" role="tab" data-tab="learn" aria-selected="'+(current.tab==='learn')+'">Learn: when to use what</button><button class="tab" role="tab" data-tab="practice" aria-selected="'+(current.tab==='practice')+'">Practice ('+m.ex.length+')</button><button class="tab" role="tab" data-tab="lab" aria-selected="'+(current.tab==='lab')+'">Real-terminal lab</button></div>';
+  let h='<section class="hero"><div class="eyebrow">Module '+String(mi+1).padStart(2,'0')+'</div><h1 style="font-size:clamp(28px,4vw,40px)">'+m.title+'</h1><p class="lede mono" style="font-size:14px">'+esc(m.blurb)+'</p>'+
+    '<div class="modstat"><span class="pill'+(modComplete(m)?' ok':'')+'">Exercises '+modProgress(m)+'/'+m.ex.length+(modComplete(m)?' ✓':'')+'</span><span class="pill'+(labDone(m)===m.lab.length?' ok':'')+'">Lab '+labDone(m)+'/'+m.lab.length+(labDone(m)===m.lab.length?' ✓':'')+'</span></div></section>'+
+    (modComplete(m)?'<div class="donebanner"><b>Module complete.</b> '+(labDone(m)===m.lab.length?'Exercises and lab all done.':'All exercises solved. Tick the lab tasks once you have run them for real.')+(mi<MODULES.length-1?' <button class="btn small" id="nextMod">Next: '+MODULES[mi+1].title+' →</button>':'')+'</div>':'');
+  h+='<div class="tabs" role="tablist"><button class="tab" role="tab" data-tab="learn" aria-selected="'+(current.tab==='learn')+'">Learn: when to use what</button><button class="tab" role="tab" data-tab="practice" aria-selected="'+(current.tab==='practice')+'">Practice '+modProgress(m)+'/'+m.ex.length+'</button><button class="tab" role="tab" data-tab="lab" aria-selected="'+(current.tab==='lab')+'">Lab '+labDone(m)+'/'+m.lab.length+'</button></div>';
   h+='<div id="tabBody"></div>';
   view.innerHTML=h;
   view.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{current.tab=t.dataset.tab; renderModule();});
+  const nm=document.getElementById('nextMod'); if(nm) nm.onclick=()=>go('mod',MODULES[mi+1].id);
   const body=document.getElementById('tabBody');
   if(current.tab==='learn'){
     body.innerHTML='<div class="lessons">'+m.lessons.map(l=>'<article class="lesson"><div><h3>'+l.h+'</h3><p class="when"><b>Use it when:</b> '+l.when+'</p>'+(l.watch?'<p class="watch"><b>Watch out:</b> '+l.watch+'</p>':'')+'</div><pre class="code">'+codeHTML(l.code)+'</pre></article>').join('')+'</div><div class="row" style="margin-top:16px"><button class="btn primary" id="toPrac">Practise these →</button></div><section class="tutor lone" aria-label="AI tutor"></section>';
@@ -747,7 +800,8 @@ function renderModule(){
       'Quiz me with 3 short questions'
     ],null);
   } else if(current.tab==='lab'){
-    body.innerHTML='<div class="lab"><h3>Do these in a real terminal</h3><p class="small-note" style="margin:0 0 8px">This app checks your typing against known-good answers; it does not run bash. The lab is where you run things for real and read real error messages. Paste an error below and ask the tutor what it means.</p><ol>'+m.lab.map(x=>'<li>'+x+'</li>').join('')+'</ol></div><section class="tutor lone" aria-label="AI tutor"></section>';
+    body.innerHTML='<div class="lab"><h3>Do these in a real terminal</h3><p class="small-note" style="margin:0 0 8px">This app checks your typing against known-good answers; it does not run bash. The lab is where you run things for real and read real error messages. Paste an error below and ask the tutor what it means.</p><ol class="labl">'+m.lab.map((x,i)=>'<li><label><input type="checkbox" id="lab-'+m.id+'-'+i+'" data-l="'+i+'"'+(((S.lab||{})[m.id]||[])[i]?' checked':'')+'><span>'+x+'</span></label></li>').join('')+'</ol><p class="small-note" style="margin:8px 0 0">Tick each task after you have done it in a real terminal.</p></div><section class="tutor lone" aria-label="AI tutor"></section>';
+    body.querySelectorAll('.labl input').forEach(cb=>cb.onchange=()=>{S.lab=S.lab||{}; const a=S.lab[m.id]=S.lab[m.id]||[]; a[+cb.dataset.l]=cb.checked; save(); if(cb.checked) toast('Lab task done · '+labDone(m)+'/'+m.lab.length); renderNav(); const pills=view.querySelectorAll('.modstat .pill'); if(pills[1]){const d=labDone(m),n=m.lab.length; pills[1].textContent='Lab '+d+'/'+n+(d===n?' ✓':''); pills[1].classList.toggle('ok',d===n);} const lt=view.querySelector('[data-tab="lab"]'); if(lt) lt.textContent='Lab '+labDone(m)+'/'+m.lab.length;});
     mountTutor(body.querySelector('.tutor'),'lab:'+m.id,()=>lessonContext(m)+'\n\nLab tasks:\n'+m.lab.map(strip).join('\n'),[
       'I got an error. What does it mean? (paste it below)',
       'Walk me through the first lab task step by step'
@@ -768,6 +822,42 @@ function pickDrill(){
   if(pool.length<12) pool=all.filter(x=>MODULES.indexOf(x.m)<=Math.max(1,MODULES.indexOf(nextModule())));
   pool=pool.map(x=>({x,w:score(x)*(0.6+Math.random())})).sort((a,b)=>b.w-a.w).slice(0,12).map(o=>o.x);
   return pool.sort(()=>Math.random()-.5);
+}
+let pinSession=null;
+function renderPins(){
+  const list=pinnedItems();
+  if(pinSession){
+    view.innerHTML='<section class="hero"><div class="eyebrow">'+(pinSession.quiz?'Pin quiz':'Pinned questions')+' · '+pinSession.items.length+'</div><h1 style="font-size:clamp(28px,4vw,40px)">'+(pinSession.quiz?'Refresh what you pinned.':'Work through your pins.')+'</h1><p class="lede">Only what you solve in this round counts. Unpin a question once it feels easy.</p></section><div id="pbody"></div><div class="row"><button class="btn small" id="backPins">← All pinned</button>'+(pinSession.quiz?'<button class="btn small" id="reshuffle">Shuffle a new round</button>':'')+'</div>';
+    document.getElementById('backPins').onclick=()=>{pinSession=null;renderPins();window.scrollTo(0,0);};
+    const rs=document.getElementById('reshuffle'); if(rs) rs.onclick=()=>{startPinQuiz(pinSession.size);};
+    mountPractice(document.getElementById('pbody'),pinSession.items,pinSession.start||0,null,true);
+    return;
+  }
+  let h='<section class="hero"><div class="eyebrow">Pinned · '+list.length+'</div><h1 style="font-size:clamp(28px,4vw,40px)">Questions you want to come back to.</h1><p class="lede">Tap <b>Pin</b> on any exercise to save it here. Quiz yourself on them, or open one to practise it again.</p></section>';
+  if(!list.length){
+    h+='<div class="empty"><p><b>Nothing pinned yet.</b></p><p>Open any module, go to Practice, and tap the <span class="pinbtn demo">'+PIN_SVG+' Pin</span> button at the top of a question. It will show up here.</p><div class="row" style="margin-top:12px"><button class="btn primary" id="goNext">Open '+nextModule().title+'</button></div></div>';
+    view.innerHTML=h; document.getElementById('goNext').onclick=()=>go('mod',nextModule().id); return;
+  }
+  h+='<div class="quizbar"><div><b>Quiz me on my pins</b><p class="small-note" style="margin:2px 0 0">Shuffled, one round, checked like normal practice.</p></div><div class="row">'+
+     (list.length>5?'<button class="btn" data-q="5">5 questions</button>':'')+
+     (list.length>10?'<button class="btn" data-q="10">10 questions</button>':'')+
+     '<button class="btn primary" data-q="'+list.length+'">All '+list.length+'</button></div></div>';
+  const byMod={}; list.forEach((x,k)=>{(byMod[x.m.id]=byMod[x.m.id]||[]).push(Object.assign({k},x));});
+  MODULES.forEach(m=>{ const g=byMod[m.id]; if(!g) return;
+    h+='<section class="pingroup"><h2>'+m.title+' <span class="small-note">'+g.length+'</span></h2><ul class="pinlist">'+g.map(x=>{
+      const ok=S.done[exId(x.m,x.i)]&&S.done[exId(x.m,x.i)].ok;
+      const kind={cmd:'Command',mcq:'Choose one',script:'Script'}[x.e.t];
+      return '<li><button class="pinopen" data-k="'+x.k+'"><span class="pinq">'+esc(strip(x.e.q).slice(0,160))+'</span><span class="pinmeta">'+kind+' · Exercise '+(x.i+1)+(ok?' · <span class="okt">✓ solved before</span>':'')+'</span></button><button class="btn small unpin" data-id="'+exId(x.m,x.i)+'" aria-label="Unpin">Unpin</button></li>';
+    }).join('')+'</ul></section>';
+  });
+  view.innerHTML=h;
+  view.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>startPinQuiz(+b.dataset.q));
+  view.querySelectorAll('.pinopen').forEach(b=>b.onclick=()=>{pinSession={items:list,start:+b.dataset.k,quiz:false}; renderPins(); window.scrollTo(0,0);});
+  view.querySelectorAll('.unpin').forEach(b=>b.onclick=()=>{togglePin(b.dataset.id); toast('Unpinned'); renderPins();});
+}
+function startPinQuiz(n){
+  const list=pinnedItems().sort(()=>Math.random()-.5).slice(0,n);
+  pinSession={items:list,start:0,quiz:true,size:n}; renderPins(); window.scrollTo(0,0);
 }
 let drillSet=null;
 function renderDrill(){
@@ -932,13 +1022,17 @@ function mountTutor(el,key,ctxFn,quick,offlineFn){
 
 /* ============================== PRACTICE ENGINE ============================== */
 function mountPractice(host,items,start,onChange,isDrill){
+  // in a drill, only answers solved in this session count; elsewhere, all-time progress
+  const sess=new Set();
+  const everOk=x=>!!(S.done[exId(x.m,x.i)]&&S.done[exId(x.m,x.i)].ok);
+  const okOf=x=>isDrill?sess.has(exId(x.m,x.i)):everOk(x);
   let idx=start; let tries=0;
   function draw(){
     const it=items[idx]; const id=exId(it.m,it.i); const e=it.e; const r=S.done[id];
     tries=0;
-    const strip=items.map((x,j)=>{const ok=S.done[exId(x.m,x.i)]&&S.done[exId(x.m,x.i)].ok; const b=BASES[j%4]; return '<button class="'+b+(ok?' done':'')+(j===idx?' cur':'')+'" data-j="'+j+'" aria-label="Exercise '+(j+1)+(ok?' solved':'')+'">'+(ok?b:'N')+'</button>';}).join('');
+    const tiles=items.map((x,j)=>{const ok=okOf(x); const b=BASES[j%4]; return '<button class="'+b+(ok?' done':'')+(j===idx?' cur':'')+'" data-j="'+j+'" aria-label="Exercise '+(j+1)+(ok?' solved':' not solved')+'">'+(ok?'✓':(j+1))+'</button>';}).join('');
     const kind={cmd:'Type the command',mcq:'Choose one',script:'Write the script'}[e.t];
-    let h='<div class="prac"><div class="prac-head"><div class="strip">'+strip+'</div><span class="small-note">'+(isDrill?esc(it.m.title)+' · ':'')+(idx+1)+' of '+items.length+(r&&r.ok?' · solved before':'')+'</span></div><div class="prac-body">';
+    let h='<div class="prac"><div class="prac-head"><div class="strip">'+tiles+'</div><span class="row" style="gap:8px"><button class="pinbtn'+(isPinned(id)?' on':'')+'" id="pinBtn" aria-pressed="'+isPinned(id)+'">'+PIN_SVG+'<span>'+(isPinned(id)?'Pinned':'Pin')+'</span></button><span class="small-note">'+(isDrill?esc(it.m.title)+' · ':'')+(idx+1)+' of '+items.length+'</span><span class="pill'+(okOf(it)?' ok':'')+'" id="stPill">'+(okOf(it)?'✓ Solved':(isDrill&&everOk(it)?'Review · solved before':'Not solved yet'))+'</span></span></div><div class="prac-body">';
     h+='<div class="kind">'+kind+'</div><p class="q">'+e.q+'</p>';
     if(e.t==='cmd'){
       h+='<div class="term">'+(e.ctx?'<div class="ctx">'+esc(e.ctx)+'</div>':'')+'<div class="line"><span class="ps">'+esc(e.ps||'$')+'</span><input id="cmdIn" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Your command" placeholder="type here, press Enter"></div></div>';
@@ -960,7 +1054,11 @@ function mountPractice(host,items,start,onChange,isDrill){
     host.querySelector('#prev').onclick=()=>{if(idx>0){idx--;draw();}};
     host.querySelector('#next').onclick=()=>{
       if(idx<items.length-1){idx++;draw();}
-      else { const solved=items.filter(x=>S.done[exId(x.m,x.i)]&&S.done[exId(x.m,x.i)].ok).length; fb.innerHTML='<div class="fb ok"><p><b>Set finished: '+solved+' of '+items.length+' solved.</b> '+(isDrill?'Shuffle a new set, or move on to your module.':'Now open the Real-terminal lab tab and try it for real.')+'</p></div>'; }
+      else { const open=items.map((x,j)=>({x,j})).filter(o=>!okOf(o.x)); const solved=items.length-open.length;
+        fb.innerHTML=open.length===0
+          ? '<div class="fb ok"><p><b>All '+items.length+' solved.</b> '+(isDrill?(current.view==='pins'?'Pin round complete. Unpin anything that now feels easy.':'Drill complete for today.'):'This module\'s exercises are complete. Next: the Lab tab, then the next module.')+'</p></div>'
+          : '<div class="fb no"><p><b>'+solved+' of '+items.length+' solved.</b> Still open: '+open.map(o=>'<button class="btn small jump" data-j="'+o.j+'">'+(o.j+1)+'</button>').join(' ')+'</p></div>';
+        fb.querySelectorAll('.jump').forEach(b=>b.onclick=()=>{idx=+b.dataset.j;draw();}); fb.scrollIntoView({block:'nearest'}); }
     };
     const showAns=()=>{
       markPeek(id);
@@ -969,6 +1067,7 @@ function mountPractice(host,items,start,onChange,isDrill){
       if(e.t==='mcq') host.querySelectorAll('.opt').forEach((b,k)=>{if(k===e.a)b.classList.add('right');});
     };
     host.querySelector('#show').onclick=showAns;
+    host.querySelector('#pinBtn').onclick=(ev)=>{const on=togglePin(id); const b=ev.currentTarget; b.classList.toggle('on',on); b.setAttribute('aria-pressed',on); b.querySelector('span').textContent=on?'Pinned':'Pin'; toast(on?'Pinned · find it under Pinned':'Unpinned');};
 
     if(e.t==='cmd'){
       const inp=host.querySelector('#cmdIn'); setTimeout(()=>inp.focus({preventScroll:true}),0);
@@ -1004,8 +1103,15 @@ function mountPractice(host,items,start,onChange,isDrill){
     }
     function good(why,alt){
       fb.innerHTML='<div class="fb ok"><p><b>Correct.</b> '+(why||'')+'</p>'+(alt?'<p class="small-note">The most common way to write it: <code>'+esc(alt)+'</code></p>':'')+'</div>';
-      host.querySelectorAll('.strip button')[idx].classList.add('done');
-      host.querySelectorAll('.strip button')[idx].textContent=BASES[idx%4];
+      sess.add(exId(items[idx].m,items[idx].i));
+      const tile=host.querySelectorAll('.strip button')[idx]; tile.classList.add('done'); tile.textContent='✓'; tile.setAttribute('aria-label','Exercise '+(idx+1)+' solved');
+      const pill=host.querySelector('#stPill'); if(pill){pill.textContent='✓ Solved'; pill.classList.add('ok');}
+      const left=items.filter(x=>!okOf(x)).length;
+      if(!isDrill){ const m=items[idx].m;
+        if(modComplete(m)) fb.insertAdjacentHTML('beforeend','<div class="donebanner" style="margin-top:10px"><b>Module complete: all '+m.ex.length+' exercises solved.</b> Next: the Lab tab.</div>'), toast('Module complete ✓');
+        else toast('Solved · '+modProgress(m)+' of '+m.ex.length+' in this module');
+        const pt=document.querySelector('[data-tab="practice"]'); if(pt) pt.textContent='Practice '+modProgress(m)+'/'+m.ex.length;
+      } else toast(left?('Solved · '+left+' left in this '+(current.view==='pins'?'round':'drill')):(current.view==='pins'?'Pin round complete':'Drill complete'));
       const nx=host.querySelector('#next'); nx.classList.add('primary'); nx.focus({preventScroll:true});
     }
   }
@@ -1031,13 +1137,13 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){ addEven
 (function(){
   const h=(location.hash||'').slice(1);
   if(h.startsWith('m-')&&MODULES.some(m=>m.id===h.slice(2))) current={view:'mod',id:h.slice(2),tab:'learn'};
-  else if(['drill','cheat','home'].includes(h)) current={view:h};
+  else if(['drill','cheat','home','pins'].includes(h)) current={view:h};
   renderNav(); render();
 })();
 addEventListener('hashchange',()=>{
   const h=(location.hash||'').slice(1);
   if(h.startsWith('m-')&&MODULES.some(m=>m.id===h.slice(2))) go('mod',h.slice(2));
-  else if(['drill','cheat','home'].includes(h)) go(h);
+  else if(['drill','cheat','home','pins'].includes(h)) go(h);
 });
 </script>
 
